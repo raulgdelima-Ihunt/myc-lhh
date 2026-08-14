@@ -5,7 +5,7 @@ import { AuthGuard } from "@/components/auth-guard";
 import { Button } from "@/components/ui/button";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
-import { useToast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/candidato/$id")({
   component: CandidatoDetail,
@@ -14,7 +14,6 @@ export const Route = createFileRoute("/admin/candidato/$id")({
 function CandidatoDetail() {
   const { id } = useParams({ from: "/admin/candidato/$id" });
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
