@@ -304,7 +304,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             <div className="space-y-6">
               {debugInfo && (
                 <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
-                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")}
+                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")} | Filtro Parceiro: {debugInfo.hasPartnerFilter ? "Sim" : "Não"} | Total antes do filtro: {debugInfo.totalBeforeFilter} | Após filtro LHH: {debugInfo.totalAfterFilter}
                 </div>
               )}
               <div className="grid grid-cols-3 gap-4">
