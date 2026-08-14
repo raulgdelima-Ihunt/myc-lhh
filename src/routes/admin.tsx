@@ -79,6 +79,27 @@ function AdminPage() {
                 Sair
               </button>
             </div>
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <a 
+                href="/admin/candidato/test-id" 
+                className="text-blue-600 underline font-bold"
+                onClick={(e) => {
+                  console.log("Link clicado, tentando navegar para /admin/candidato/test-id");
+                }}
+              >
+                TESTE: Link direto para detalhe (a href)
+              </a>
+              <Button 
+                variant="link" 
+                className="ml-4"
+                onClick={() => {
+                  console.log("Botão clicado, usando navigate({ to: '/admin/candidato/test-id' })");
+                  navigate({ to: '/admin/candidato/test-id' as any });
+                }}
+              >
+                TESTE: Navegar via Hook
+              </Button>
+            </div>
           </div>
 
           {/* Stats Grid */}
