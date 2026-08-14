@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { AuthGuard } from "@/components/auth-guard";
-import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2 } from "lucide-react";
+import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase } from "lucide-react";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useCandidatos, useAdminStats } from "@/hooks/use-candidatos";
 import { ImportCandidatosModal } from "@/components/admin/import-modal";
+import { ImportIndicacoesModal } from "@/components/admin/import-indicacoes-modal";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -26,6 +27,7 @@ function AdminPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isImportIndicacoesModalOpen, setIsImportIndicacoesModalOpen] = useState(false);
 
   const { data: candidatos, isLoading: isLoadingCandidatos, refetch: refetchCandidatos } = useCandidatos(searchTerm);
   const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useAdminStats();
@@ -59,7 +61,15 @@ function AdminPage() {
                 className="bg-violet-600 hover:bg-violet-700 text-white"
               >
                 <FileSpreadsheet size={18} className="mr-2" />
-                Importar Candidatos (Excel)
+                Importar Candidatos
+              </Button>
+              <Button
+                onClick={() => setIsImportIndicacoesModalOpen(true)}
+                variant="outline"
+                className="border-violet-600 text-violet-600 hover:bg-violet-50"
+              >
+                <Briefcase size={18} className="mr-2" />
+                Importar Indicações
               </Button>
               <button
                 onClick={handleLogout}
@@ -72,7 +82,7 @@ function AdminPage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -116,6 +126,22 @@ function AdminPage() {
                   </div>
                   <div className="p-3 bg-amber-50 rounded-lg">
                     <MailWarning className="h-6 w-6 text-amber-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total de Indicações</p>
+                    <p className="text-3xl font-bold text-gray-900">
+                      {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin text-gray-300" /> : stats?.totalIndicacoes || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-violet-50 rounded-lg">
+                    <Briefcase className="h-6 w-6 text-violet-600" />
                   </div>
                 </div>
               </CardContent>
@@ -189,6 +215,11 @@ function AdminPage() {
       <ImportCandidatosModal 
         isOpen={isImportModalOpen} 
         onClose={() => setIsImportModalOpen(false)} 
+        onSuccess={handleImportSuccess}
+      />
+      <ImportIndicacoesModal 
+        isOpen={isImportIndicacoesModalOpen} 
+        onClose={() => setIsImportIndicacoesModalOpen(false)} 
         onSuccess={handleImportSuccess}
       />
     </AuthGuard>
