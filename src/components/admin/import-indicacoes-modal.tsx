@@ -68,20 +68,17 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
   const parseExcelDate = (val: any) => {
     if (!val) return null;
     
-    // If it's a number (Excel date format)
     if (typeof val === 'number') {
       const date = XLSX.SSF.parse_date_code(val);
       return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
     }
     
-    // If it's a string, try common formats like DD/MM/YYYY
     const str = String(val).trim();
     const parts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
     if (parts) {
       return `${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
     }
 
-    // Try standard JS date parsing
     const d = new Date(str);
     if (!isNaN(d.getTime())) {
       return d.toISOString().split('T')[0];
@@ -105,12 +102,12 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       const ignored: string[] = [];
       const allMappedData: MappedIndication[] = [];
 
-      // Fetch all candidates for matching
       const { data: candidates } = await supabase
         .from("candidatos")
         .select("id, nome_normalizado");
       
-      const candidatesMap = new Map((candidates || []).map(c => [c.nome_normalizado, c.id]));
+      const candidatesList = candidates || [];
+      const candidatesMap = new Map(candidatesList.map(c => [c.nome_normalizado, c.id]));
 
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
@@ -122,7 +119,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           continue;
         }
 
-        const headerRow = jsonData[0].map(h => String(h || "").trim().toLowerCase());
+        const headerRow = (jsonData[0] || []).map(h => String(h || "").trim().toLowerCase());
         const idxCliente = headerRow.indexOf("cliente");
         
         if (idxCliente === -1) {
@@ -142,11 +139,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxData = getCol("data");
         const idxResultado = getCol("resultado");
 
-        const dataRows = (jsonData as any[][]).slice(1);
+        const dataRows = jsonData.slice(1);
         
         for (const row of dataRows) {
           const rawVaga = idxVaga !== -1 ? String(row[idxVaga] || "").trim() : "";
-          if (!rawVaga) continue; // Skip empty rows
+          if (!rawVaga) continue;
 
           const rawCliente = String(row[idxCliente] || "").trim();
           const normalizedCliente = normalizeName(rawCliente);
@@ -154,16 +151,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           let candidatoId: string | null = null;
           let vinculado = false;
 
-          // 1. Exact match
           if (candidatesMap.has(normalizedCliente)) {
-            candidatoId = candidatesMap.get(normalizedCliente)!;
+            candidatoId = candidatesMap.get(normalizedCliente) || null;
             vinculado = true;
-          } 
-          // 2. Partial match (first 2 words)
-          else {
+          } else {
             const firstTwoWords = normalizedCliente.split(' ').slice(0, 2).join(' ');
             if (firstTwoWords) {
-              const match = candidates?.find(c => c.nome_normalizado.startsWith(firstTwoWords));
+              const match = candidatesList.find(c => c.nome_normalizado.startsWith(firstTwoWords));
               if (match) {
                 candidatoId = match.id;
                 vinculado = true;
@@ -176,11 +170,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             candidato_nome_original: rawCliente,
             vaga: rawVaga,
             empresa: idxEmpresa !== -1 ? String(row[idxEmpresa] || "").trim() : "-",
-            indicacao_contato: idxIndicacao !== -1 ? (row[idxIndicacao] ? String(row[idxIndicacao]).trim() : null) : null,
-            vaga_link: idxLink !== -1 ? (row[idxLink] ? String(row[idxLink]).trim() : null) : null,
-            formato: idxFormato !== -1 ? (row[idxFormato] ? String(row[idxFormato]).trim() : null) : null,
+            indicacao_contato: idxIndicacao !== -1 && row[idxIndicacao] ? String(row[idxIndicacao]).trim() : null,
+            vaga_link: idxLink !== -1 && row[idxLink] ? String(row[idxLink]).trim() : null,
+            formato: idxFormato !== -1 && row[idxFormato] ? String(row[idxFormato]).trim() : null,
             data_acao: idxData !== -1 ? parseExcelDate(row[idxData]) : null,
-            resultado: idxResultado !== -1 ? (row[idxResultado] ? String(row[idxResultado]).trim() : null) : null,
+            resultado: idxResultado !== -1 && row[idxResultado] ? String(row[idxResultado]).trim() : null,
             jobhunter: sheetName,
             vinculado
           });
@@ -200,7 +194,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         total: allMappedData.length,
         vinculados,
         naoVinculados,
-        novos: 0, // Calculated on confirm
+        novos: 0,
         atualizacoes: 0
       });
       setNaoVinculadosNomes(uniqueNaoVinculados);
@@ -221,7 +215,6 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       let insertedCount = 0;
       let updatedCount = 0;
 
-      // Only import linked candidates
       const toImport = previewData.filter(d => d.vinculado && d.candidato_id);
       
       const chunkSize = 50;
@@ -229,13 +222,15 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const chunk = toImport.slice(i, i + chunkSize);
         
         for (const item of chunk) {
+          if (!item.candidato_id) continue;
+
           const { data: existing } = await supabase
             .from("indicacoes")
             .select("id")
             .eq("candidato_id", item.candidato_id)
             .eq("vaga", item.vaga)
             .eq("empresa", item.empresa)
-            .eq("data_acao", item.data_acao)
+            .eq("data_acao", item.data_acao || "")
             .maybeSingle();
 
           const dataToUpsert = {
