@@ -30,7 +30,14 @@ interface ImportModalProps {
 export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
-  const [debugInfo, setDebugInfo] = useState<{ sheetName: string; headerRow: number; columnsFound: string[] } | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{ 
+    sheetName: string; 
+    headerRow: number; 
+    columnsFound: string[];
+    hasPartnerFilter: boolean;
+    totalBeforeFilter: number;
+    totalAfterFilter: number;
+  } | null>(null);
   const [stats, setStats] = useState({ total: 0, withEmail: 0, withoutEmail: 0 });
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -55,19 +62,54 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const data = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(data);
       
-      // Find best sheet
-      let targetSheetName = workbook.SheetNames.find(name => name.includes("2026")) || workbook.SheetNames[0];
+      // Find best sheet based on priority
+      const getSheetPriority = (name: string) => {
+        if (name === "2026") return 1000;
+        const numMatch = name.match(/\d+/);
+        if (numMatch) return parseInt(numMatch[0]);
+        return 0;
+      };
+
+      const sortedSheetNames = [...workbook.SheetNames].sort((a, b) => {
+        const prioA = getSheetPriority(a);
+        const prioB = getSheetPriority(b);
+        if (prioA !== prioB) return prioB - prioA;
+        return 0; // If equal, preserve original order (or the sort might change it)
+      });
+      
+      // The instructions say: 1. "2026" (exact), 2. highest number, 3. last sheet.
+      // We will try them in that order of preference for header detection.
+      const priorityOrder: string[] = [];
+      const exact2026 = workbook.SheetNames.find(n => n === "2026");
+      if (exact2026) priorityOrder.push(exact2026);
+      
+      const sheetsWithNumbers = workbook.SheetNames
+        .filter(n => n !== "2026" && /\d+/.test(n))
+        .sort((a, b) => {
+          const numA = parseInt(a.match(/\d+/)![0]);
+          const numB = parseInt(b.match(/\d+/)![0]);
+          return numB - numA;
+        });
+      priorityOrder.push(...sheetsWithNumbers);
+      
+      const lastSheet = workbook.SheetNames[workbook.SheetNames.length - 1];
+      if (lastSheet && !priorityOrder.includes(lastSheet)) priorityOrder.push(lastSheet);
+
+      // Also add remaining sheets just in case
+      workbook.SheetNames.forEach(n => {
+        if (n && !priorityOrder.includes(n)) priorityOrder.push(n);
+      });
+
+      let targetSheetName = "";
       let foundHeaderRow = -1;
       let finalJsonData: any[][] = [];
       const keywords = ["Assessorado", "Email", "Parceiro", "Área", "Jobhunter", "Nível de Cargo", "Último Salário", "Telefone"];
 
-      // If "2026" didn't work immediately, or to double check header existence
-      for (const sheetName of workbook.SheetNames) {
+      for (const sheetName of priorityOrder) {
         const worksheet = workbook.Sheets[sheetName];
         if (!worksheet) continue;
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
         
-        // Scan first 5 lines
         for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
           const rowData = jsonData[i];
           if (!rowData) continue;
@@ -125,33 +167,40 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxTelefone = getColumnIndex(["telefone"]);
       const idxJobhunter = getColumnIndex(["jobhunter"]);
 
+      const totalBeforeFilter = dataRows.length;
+      const filteredRows = dataRows.filter(row => {
+        const valNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
+        if (!valNome) return false;
+
+        if (idxParceiro !== -1) {
+          const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
+          // Import only if Parceiro = "LHH" (case-insensitive, trim)
+          // Based on rules: "Se a coluna 'Parceiro' existir: importar APENAS linhas onde Parceiro = 'LHH'"
+          return parceiro === "LHH";
+        }
+        return true;
+      });
+      const totalAfterFilter = filteredRows.length;
+
       setDebugInfo({
         sheetName: targetSheetName || "Nenhuma",
         headerRow: foundHeaderRow + 1,
         columnsFound: headers.filter((_, i) => 
           [idxNome, idxEmail, idxParceiro, idxArea, idxNivel, idxSalario, idxTelefone, idxJobhunter].includes(i)
-        )
+        ),
+        hasPartnerFilter: idxParceiro !== -1,
+        totalBeforeFilter,
+        totalAfterFilter
       });
 
-
-      const mappedData = dataRows
-        .filter(row => {
-          const valNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
-          if (!valNome) return false;
-
-          if (idxParceiro !== -1) {
-            const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
-            return parceiro === "LHH" || parceiro === "";
-          }
-          return true;
-        })
+      const mappedData = filteredRows
         .map(row => {
           const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
           return {
             nome: rawNome.replace(/\([^)]*\)/g, "").trim(),
             nome_normalizado: normalizeName(rawNome),
             email: idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : null,
-            parceiro: idxParceiro !== -1 ? (row[idxParceiro] || "LHH") : "LHH",
+            parceiro: idxParceiro !== -1 ? String(row[idxParceiro] || "").trim() : "LHH",
             area: idxArea !== -1 ? row[idxArea] : null,
             nivel_cargo: idxNivel !== -1 ? row[idxNivel] : null,
             ultimo_salario: idxSalario !== -1 ? row[idxSalario] : null,
@@ -255,7 +304,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             <div className="space-y-6">
               {debugInfo && (
                 <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
-                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")}
+                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")} | Filtro Parceiro: {debugInfo.hasPartnerFilter ? "Sim" : "Não"} | Total antes do filtro: {debugInfo.totalBeforeFilter} | Após filtro LHH: {debugInfo.totalAfterFilter}
                 </div>
               )}
               <div className="grid grid-cols-3 gap-4">
