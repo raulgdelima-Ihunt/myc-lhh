@@ -22,14 +22,27 @@ export const useAdminStats = () => {
   return useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("candidatos").select("email");
-      if (error) throw error;
+      // Get candidates stats
+      const { data: candidatesData, error: candidatesError } = await supabase.from("candidatos").select("email");
+      if (candidatesError) throw candidatesError;
 
-      const total = data.length;
-      const withEmail = data.filter((c) => c.email && c.email.trim() !== "").length;
-      const withoutEmail = total - withEmail;
+      const totalCandidates = candidatesData.length;
+      const candidatesWithEmail = candidatesData.filter((c) => c.email && c.email.trim() !== "").length;
+      const candidatesWithoutEmail = totalCandidates - candidatesWithEmail;
 
-      return { total, withEmail, withoutEmail };
+      // Get total indications
+      const { count: totalIndicacoes, error: indicacoesError } = await supabase
+        .from("indicacoes")
+        .select("*", { count: 'exact', head: true });
+      
+      if (indicacoesError) throw indicacoesError;
+
+      return { 
+        total: totalCandidates, 
+        withEmail: candidatesWithEmail, 
+        withoutEmail: candidatesWithoutEmail,
+        totalIndicacoes: totalIndicacoes || 0
+      };
     },
   });
 };
