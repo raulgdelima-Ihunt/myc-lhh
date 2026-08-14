@@ -30,7 +30,14 @@ interface ImportModalProps {
 export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
-  const [debugInfo, setDebugInfo] = useState<{ sheetName: string; headerRow: number; columnsFound: string[] } | null>(null);
+  const [debugInfo, setDebugInfo] = useState<{ 
+    sheetName: string; 
+    headerRow: number; 
+    columnsFound: string[];
+    hasPartnerFilter: boolean;
+    totalBeforeFilter: number;
+    totalAfterFilter: number;
+  } | null>(null);
   const [stats, setStats] = useState({ total: 0, withEmail: 0, withoutEmail: 0 });
 
   const [isProcessing, setIsProcessing] = useState(false);
