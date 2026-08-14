@@ -14,7 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      candidatos: {
+        Row: {
+          area: string | null
+          consultor_responsavel: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          nivel_cargo: string | null
+          nome: string
+          nome_normalizado: string
+          parceiro: string | null
+          status: string | null
+          telefone: string | null
+          ultimo_salario: string | null
+        }
+        Insert: {
+          area?: string | null
+          consultor_responsavel?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nivel_cargo?: string | null
+          nome: string
+          nome_normalizado: string
+          parceiro?: string | null
+          status?: string | null
+          telefone?: string | null
+          ultimo_salario?: string | null
+        }
+        Update: {
+          area?: string | null
+          consultor_responsavel?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          nivel_cargo?: string | null
+          nome?: string
+          nome_normalizado?: string
+          parceiro?: string | null
+          status?: string | null
+          telefone?: string | null
+          ultimo_salario?: string | null
+        }
+        Relationships: []
+      }
+      indicacoes: {
+        Row: {
+          acao_tipo: string | null
+          candidato_id: string | null
+          created_at: string | null
+          data_acao: string | null
+          empresa: string
+          formato: string | null
+          id: string
+          indicacao_contato: string | null
+          jobhunter: string | null
+          resultado: string | null
+          vaga: string
+          vaga_link: string | null
+        }
+        Insert: {
+          acao_tipo?: string | null
+          candidato_id?: string | null
+          created_at?: string | null
+          data_acao?: string | null
+          empresa: string
+          formato?: string | null
+          id?: string
+          indicacao_contato?: string | null
+          jobhunter?: string | null
+          resultado?: string | null
+          vaga: string
+          vaga_link?: string | null
+        }
+        Update: {
+          acao_tipo?: string | null
+          candidato_id?: string | null
+          created_at?: string | null
+          data_acao?: string | null
+          empresa?: string
+          formato?: string | null
+          id?: string
+          indicacao_contato?: string | null
+          jobhunter?: string | null
+          resultado?: string | null
+          vaga?: string
+          vaga_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicacoes_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
