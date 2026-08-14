@@ -110,10 +110,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         .from("candidatos")
         .select("id, nome_normalizado");
       
-      const candidatesMap = new Map(candidates?.map(c => [c.nome_normalizado, c.id]));
+      const candidatesMap = new Map((candidates || []).map(c => [c.nome_normalizado, c.id]));
 
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) continue;
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
         
         if (jsonData.length === 0) {
@@ -141,7 +142,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxData = getCol("data");
         const idxResultado = getCol("resultado");
 
-        const dataRows = jsonData.slice(1);
+        const dataRows = (jsonData as any[][]).slice(1);
         
         for (const row of dataRows) {
           const rawVaga = idxVaga !== -1 ? String(row[idxVaga] || "").trim() : "";
@@ -175,11 +176,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             candidato_nome_original: rawCliente,
             vaga: rawVaga,
             empresa: idxEmpresa !== -1 ? String(row[idxEmpresa] || "").trim() : "-",
-            indicacao_contato: idxIndicacao !== -1 ? String(row[idxIndicacao] || "").trim() : null,
-            vaga_link: idxLink !== -1 ? String(row[idxLink] || "").trim() : null,
-            formato: idxFormato !== -1 ? String(row[idxFormato] || "").trim() : null,
+            indicacao_contato: idxIndicacao !== -1 ? (row[idxIndicacao] ? String(row[idxIndicacao]).trim() : null) : null,
+            vaga_link: idxLink !== -1 ? (row[idxLink] ? String(row[idxLink]).trim() : null) : null,
+            formato: idxFormato !== -1 ? (row[idxFormato] ? String(row[idxFormato]).trim() : null) : null,
             data_acao: idxData !== -1 ? parseExcelDate(row[idxData]) : null,
-            resultado: idxResultado !== -1 ? String(row[idxResultado] || "").trim() : null,
+            resultado: idxResultado !== -1 ? (row[idxResultado] ? String(row[idxResultado]).trim() : null) : null,
             jobhunter: sheetName,
             vinculado
           });
@@ -364,9 +365,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                         <TableRow key={i} className={!row.vinculado ? "bg-red-50/30" : ""}>
                           <TableCell>
                             {row.vinculado ? (
-                              <CheckCircle2 size={16} className="text-green-600" title="Vinculado" />
+                              <CheckCircle2 size={16} className="text-green-600" />
                             ) : (
-                              <AlertCircle size={16} className="text-red-500" title="Não encontrado" />
+                              <AlertCircle size={16} className="text-red-500" />
                             )}
                           </TableCell>
                           <TableCell className="font-medium truncate max-w-[150px]">
