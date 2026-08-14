@@ -126,12 +126,13 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxJobhunter = getColumnIndex(["jobhunter"]);
 
       setDebugInfo({
-        sheetName: targetSheetName,
+        sheetName: targetSheetName || "Nenhuma",
         headerRow: foundHeaderRow + 1,
         columnsFound: headers.filter((_, i) => 
           [idxNome, idxEmail, idxParceiro, idxArea, idxNivel, idxSalario, idxTelefone, idxJobhunter].includes(i)
         )
       });
+
 
       const mappedData = dataRows
         .filter(row => {
