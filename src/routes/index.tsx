@@ -1,10 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-if (typeof window !== 'undefined') {
-  (window as any).supabase = supabase;
-  console.log('Supabase added to window');
-}
 import { Briefcase, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,17 +19,21 @@ function Index() {
   useEffect(() => {
     const seedAdmin = async () => {
       console.log('Iniciando seed de admin...');
-      const { data, error } = await supabase.auth.signUp({
-        email: 'admin@lhh.com.br',
-        password: 'Teste2026*'
-      });
-      
-      if (error) {
-        console.error('Erro no signup do admin:', error.message);
-        toast.error('Erro no seed: ' + error.message);
-      } else {
-        console.log('Resultado do signup:', data);
-        toast.success('Admin criado com sucesso!');
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: 'admin@lhh.com.br',
+          password: 'Teste2026*'
+        });
+        
+        if (error) {
+          console.error('Erro no signup do admin:', error.message);
+          toast.error('Erro no seed: ' + error.message);
+        } else {
+          console.log('Resultado do signup:', data);
+          toast.success('Admin criado com sucesso!');
+        }
+      } catch (e) {
+        console.error('Catch seed error:', e);
       }
     };
 
