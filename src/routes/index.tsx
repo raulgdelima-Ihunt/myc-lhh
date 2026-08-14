@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+if (typeof window !== 'undefined') (window as any).supabase = supabase;
 import { Briefcase, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 
