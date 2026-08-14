@@ -7,6 +7,7 @@ import { useCandidateDashboard } from "@/hooks/use-candidato-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,

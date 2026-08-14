@@ -40,7 +40,20 @@ function Index() {
       if (roleData?.role === "admin") {
         navigate({ to: "/admin" });
       } else {
-        navigate({ to: "/dashboard" });
+        // If not admin, check if candidate exists
+        const { data: candidateData } = await supabase
+          .from("candidatos")
+          .select("id")
+          .eq("email", email)
+          .single();
+
+        if (candidateData) {
+          navigate({ to: "/dashboard" });
+        } else {
+          setError("Acesso não autorizado. Entre em contato com seu consultor.");
+          await supabase.auth.signOut();
+          setLoading(false);
+        }
       }
     }
   };
