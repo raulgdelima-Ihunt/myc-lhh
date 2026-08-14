@@ -57,6 +57,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       let targetSheetName = workbook.SheetNames[0];
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
+        if (!worksheet) continue;
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
         
         // Check row 0 or 1 for "Assessorado"
@@ -70,7 +71,12 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       }
 
       const worksheet = workbook.Sheets[targetSheetName];
+      if (!worksheet) {
+        toast.error("Planilha vazia ou inválida.");
+        return;
+      }
       const rawData = XLSX.utils.sheet_to_json(worksheet) as any[];
+
 
       const mappedData = rawData
         .filter((row: any) => {
