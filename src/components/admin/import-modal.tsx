@@ -93,11 +93,11 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       priorityOrder.push(...sheetsWithNumbers);
       
       const lastSheet = workbook.SheetNames[workbook.SheetNames.length - 1];
-      if (!priorityOrder.includes(lastSheet)) priorityOrder.push(lastSheet);
+      if (lastSheet && !priorityOrder.includes(lastSheet)) priorityOrder.push(lastSheet);
 
       // Also add remaining sheets just in case
       workbook.SheetNames.forEach(n => {
-        if (!priorityOrder.includes(n)) priorityOrder.push(n);
+        if (n && !priorityOrder.includes(n)) priorityOrder.push(n);
       });
 
       let targetSheetName = "";
