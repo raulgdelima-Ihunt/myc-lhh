@@ -167,33 +167,40 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxTelefone = getColumnIndex(["telefone"]);
       const idxJobhunter = getColumnIndex(["jobhunter"]);
 
+      const totalBeforeFilter = dataRows.length;
+      const filteredRows = dataRows.filter(row => {
+        const valNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
+        if (!valNome) return false;
+
+        if (idxParceiro !== -1) {
+          const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
+          // Import only if Parceiro = "LHH" (case-insensitive, trim)
+          // Based on rules: "Se a coluna 'Parceiro' existir: importar APENAS linhas onde Parceiro = 'LHH'"
+          return parceiro === "LHH";
+        }
+        return true;
+      });
+      const totalAfterFilter = filteredRows.length;
+
       setDebugInfo({
         sheetName: targetSheetName || "Nenhuma",
         headerRow: foundHeaderRow + 1,
         columnsFound: headers.filter((_, i) => 
           [idxNome, idxEmail, idxParceiro, idxArea, idxNivel, idxSalario, idxTelefone, idxJobhunter].includes(i)
-        )
+        ),
+        hasPartnerFilter: idxParceiro !== -1,
+        totalBeforeFilter,
+        totalAfterFilter
       });
 
-
-      const mappedData = dataRows
-        .filter(row => {
-          const valNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
-          if (!valNome) return false;
-
-          if (idxParceiro !== -1) {
-            const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
-            return parceiro === "LHH" || parceiro === "";
-          }
-          return true;
-        })
+      const mappedData = filteredRows
         .map(row => {
           const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
           return {
             nome: rawNome.replace(/\([^)]*\)/g, "").trim(),
             nome_normalizado: normalizeName(rawNome),
             email: idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : null,
-            parceiro: idxParceiro !== -1 ? (row[idxParceiro] || "LHH") : "LHH",
+            parceiro: idxParceiro !== -1 ? String(row[idxParceiro] || "").trim() : "LHH",
             area: idxArea !== -1 ? row[idxArea] : null,
             nivel_cargo: idxNivel !== -1 ? row[idxNivel] : null,
             ultimo_salario: idxSalario !== -1 ? row[idxSalario] : null,
