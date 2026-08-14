@@ -183,7 +183,11 @@ function AdminPage() {
                   </TableHeader>
                   <TableBody>
                     {candidatos.map((c) => (
-                      <TableRow key={c.id}>
+                      <TableRow 
+                        key={c.id} 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => navigate({ to: `/admin/candidato/${c.id}` })}
+                      >
                         <TableCell className="font-medium text-gray-900">{c.nome}</TableCell>
                         <TableCell className="text-gray-600">{c.email || "-"}</TableCell>
                         <TableCell className="text-gray-600">{c.area || "-"}</TableCell>
