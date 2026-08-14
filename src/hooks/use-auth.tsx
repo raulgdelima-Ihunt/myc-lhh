@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+if (typeof window !== 'undefined') (window as any).supabase = supabase;
 import type { User, Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
