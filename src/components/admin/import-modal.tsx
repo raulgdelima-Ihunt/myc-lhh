@@ -70,7 +70,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         }
       }
 
-      const worksheet = workbook.Sheets[targetSheetName];
+      const worksheet = targetSheetName ? workbook.Sheets[targetSheetName] : undefined;
       if (!worksheet) {
         toast.error("Planilha vazia ou inválida.");
         return;
