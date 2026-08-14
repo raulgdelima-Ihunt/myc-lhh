@@ -30,7 +30,9 @@ interface ImportModalProps {
 export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
+  const [debugInfo, setDebugInfo] = useState<{ sheetName: string; headerRow: number; columnsFound: string[] } | null>(null);
   const [stats, setStats] = useState({ total: 0, withEmail: 0, withoutEmail: 0 });
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -53,48 +55,111 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const data = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(data);
       
-      // Find sheet with "Assessorado"
-      let targetSheetName = workbook.SheetNames[0];
+      // Find best sheet
+      let targetSheetName = workbook.SheetNames.find(name => name.includes("2026")) || workbook.SheetNames[0];
+      let foundHeaderRow = -1;
+      let finalJsonData: any[][] = [];
+      const keywords = ["Assessorado", "Email", "Parceiro", "Área", "Jobhunter", "Nível de Cargo", "Último Salário", "Telefone"];
+
+      // If "2026" didn't work immediately, or to double check header existence
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
         if (!worksheet) continue;
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
         
-        // Check row 0 or 1 for "Assessorado"
-        const headerRow1 = jsonData[0] || [];
-        const headerRow2 = jsonData[1] || [];
-        
-        if (headerRow1.includes("Assessorado") || headerRow2.includes("Assessorado")) {
-          targetSheetName = sheetName;
-          break;
+        // Scan first 5 lines
+        for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
+          const rowData = jsonData[i];
+          if (!rowData) continue;
+          const row = rowData.map(cell => String(cell || "").trim().toLowerCase());
+
+          const matchCount = keywords.filter(k => 
+            row.some(cell => cell.includes(k.toLowerCase()))
+          ).length;
+
+          if (matchCount >= 3) {
+            targetSheetName = sheetName;
+            foundHeaderRow = i;
+            finalJsonData = jsonData;
+            break;
+          }
         }
+        if (foundHeaderRow !== -1) break;
       }
 
-      const worksheet = targetSheetName ? workbook.Sheets[targetSheetName] : undefined;
-      if (!worksheet) {
-        toast.error("Planilha vazia ou inválida.");
+      if (foundHeaderRow === -1) {
+        // Fallback to first sheet row 0 if nothing found
+        const ws = targetSheetName ? workbook.Sheets[targetSheetName] : undefined;
+        finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
+        foundHeaderRow = 0;
+      }
+
+      const headerRowData = finalJsonData[foundHeaderRow];
+      if (!headerRowData) {
+        toast.error("Cabeçalho não encontrado.");
         return;
       }
-      const rawData = XLSX.utils.sheet_to_json(worksheet) as any[];
+      const headers = headerRowData.map(h => String(h || "").trim());
+
+      const dataRows = finalJsonData.slice(foundHeaderRow + 1);
+
+      // Mapping logic
+      const getColumnIndex = (patterns: string[], excludeIndex: number = -1) => {
+        return headers.findIndex((h, idx) => {
+          if (idx === excludeIndex) return false;
+          const lowerH = h.toLowerCase();
+          return patterns.some(p => lowerH.includes(p.toLowerCase()));
+        });
+      };
+
+      const idxNome = getColumnIndex(["assessorado"]);
+      const idxEmail = getColumnIndex(["email", "e-mail"]);
+      const idxParceiro = getColumnIndex(["parceiro"]);
+      // For "Área", we want to be careful about the "resíduo" in row 0
+      const idxArea = getColumnIndex(["área", "area"]);
+      const idxNivel = getColumnIndex(["nível", "nivel"]);
+      const idxSalario = headers.findIndex(h => {
+        const lh = h.toLowerCase();
+        return (lh.includes("salário") || lh.includes("salario")) && (lh.includes("último") || lh.includes("ultimo"));
+      });
+      const idxTelefone = getColumnIndex(["telefone"]);
+      const idxJobhunter = getColumnIndex(["jobhunter"]);
+
+      setDebugInfo({
+        sheetName: targetSheetName || "Nenhuma",
+        headerRow: foundHeaderRow + 1,
+        columnsFound: headers.filter((_, i) => 
+          [idxNome, idxEmail, idxParceiro, idxArea, idxNivel, idxSalario, idxTelefone, idxJobhunter].includes(i)
+        )
+      });
 
 
-      const mappedData = rawData
-        .filter((row: any) => {
-          const parceiro = String(row["Parceiro"] || "").toUpperCase();
-          return parceiro === "LHH" || !row["Parceiro"];
+      const mappedData = dataRows
+        .filter(row => {
+          const valNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
+          if (!valNome) return false;
+
+          if (idxParceiro !== -1) {
+            const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
+            return parceiro === "LHH" || parceiro === "";
+          }
+          return true;
         })
-        .map((row: any) => ({
-          nome: String(row["Assessorado"] || ""),
-          nome_normalizado: normalizeName(String(row["Assessorado"] || "")),
-          email: row["Email"] ? String(row["Email"]).trim() : null,
-          parceiro: row["Parceiro"] || "LHH",
-          area: row["Área"] || null,
-          nivel_cargo: row["Nível de Cargo"] || null,
-          ultimo_salario: row["Último Salário"] || null,
-          telefone: row["Telefone"] || null,
-          consultor_responsavel: row["Jobhunter"] || null,
-          status: "ativo",
-        }));
+        .map(row => {
+          const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
+          return {
+            nome: rawNome.replace(/\([^)]*\)/g, "").trim(),
+            nome_normalizado: normalizeName(rawNome),
+            email: idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : null,
+            parceiro: idxParceiro !== -1 ? (row[idxParceiro] || "LHH") : "LHH",
+            area: idxArea !== -1 ? row[idxArea] : null,
+            nivel_cargo: idxNivel !== -1 ? row[idxNivel] : null,
+            ultimo_salario: idxSalario !== -1 ? row[idxSalario] : null,
+            telefone: idxTelefone !== -1 ? row[idxTelefone] : null,
+            consultor_responsavel: idxJobhunter !== -1 ? row[idxJobhunter] : null,
+            status: "ativo",
+          };
+        });
 
       setPreviewData(mappedData);
       
@@ -111,6 +176,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
     } finally {
       setIsProcessing(false);
     }
+
   };
 
   const handleConfirmImport = async () => {
@@ -187,7 +253,13 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             </div>
           ) : (
             <div className="space-y-6">
+              {debugInfo && (
+                <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
+                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")}
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-4">
+
                 <div className="bg-violet-50 p-4 rounded-lg">
                   <p className="text-xs text-violet-600 font-medium uppercase">A importar</p>
                   <p className="text-2xl font-bold text-violet-900">{stats.total}</p>
