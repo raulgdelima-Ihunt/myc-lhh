@@ -253,7 +253,13 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             </div>
           ) : (
             <div className="space-y-6">
+              {debugInfo && (
+                <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
+                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")}
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-4">
+
                 <div className="bg-violet-50 p-4 rounded-lg">
                   <p className="text-xs text-violet-600 font-medium uppercase">A importar</p>
                   <p className="text-2xl font-bold text-violet-900">{stats.total}</p>
