@@ -75,7 +75,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     
     const str = String(val).trim();
     const parts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-    if (parts) {
+    if (parts && parts[1] && parts[2] && parts[3]) {
       return `${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
     }
 
@@ -173,7 +173,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             indicacao_contato: idxIndicacao !== -1 && row[idxIndicacao] ? String(row[idxIndicacao]).trim() : null,
             vaga_link: idxLink !== -1 && row[idxLink] ? String(row[idxLink]).trim() : null,
             formato: idxFormato !== -1 && row[idxFormato] ? String(row[idxFormato]).trim() : null,
-            data_acao: idxData !== -1 ? parseExcelDate(row[idxData]) : null,
+            data_acao: idxData !== -1 ? (parseExcelDate(row[idxData]) as string | null) : null,
             resultado: idxResultado !== -1 && row[idxResultado] ? String(row[idxResultado]).trim() : null,
             jobhunter: sheetName,
             vinculado
