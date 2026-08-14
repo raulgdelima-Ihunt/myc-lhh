@@ -79,7 +79,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       
       // The instructions say: 1. "2026" (exact), 2. highest number, 3. last sheet.
       // We will try them in that order of preference for header detection.
-      const priorityOrder = [];
+      const priorityOrder: string[] = [];
       const exact2026 = workbook.SheetNames.find(n => n === "2026");
       if (exact2026) priorityOrder.push(exact2026);
       
