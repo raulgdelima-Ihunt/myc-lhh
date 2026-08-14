@@ -15,6 +15,28 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    const checkAndCreateUser = async () => {
+      console.log('Testing auth flow...');
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: 'admin@lhh.com.br',
+        password: 'Teste2026*'
+      });
+      
+      console.log('SignUp Result:', { signUpData, signUpError });
+      
+      if (signUpError?.message === 'User already registered') {
+        console.log('User exists, attempting sign in...');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: 'admin@lhh.com.br',
+          password: 'Teste2026*'
+        });
+        console.log('SignIn Result:', { signInData, signInError });
+      }
+    };
+    checkAndCreateUser();
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
