@@ -18,23 +18,22 @@ function Index() {
 
   useEffect(() => {
     const seedAdmin = async () => {
+      console.log('Iniciando seed de admin...');
       const { data, error } = await supabase.auth.signUp({
         email: 'admin@lhh.com.br',
         password: 'Teste2026*'
       });
       
       if (error) {
-        console.log('Seed error:', error.message);
-      } else if (data.user) {
-        console.log('Admin criado com sucesso:', data.user.email);
-        toast.success("Admin criado: " + data.user.email);
+        console.error('Erro no signup do admin:', error.message);
+        toast.error('Erro no seed: ' + error.message);
+      } else {
+        console.log('Resultado do signup:', data);
+        toast.success('Admin criado com sucesso!');
       }
     };
 
-    // Só executa se for um parâmetro específico ou localmente para evitar spam
-    if (window.location.search.includes('seed=true')) {
-      seedAdmin();
-    }
+    seedAdmin();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
