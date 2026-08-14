@@ -89,12 +89,18 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       if (foundHeaderRow === -1) {
         // Fallback to first sheet row 0 if nothing found
-        const ws = workbook.Sheets[targetSheetName];
+        const ws = targetSheetName ? workbook.Sheets[targetSheetName] : undefined;
         finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
         foundHeaderRow = 0;
       }
 
-      const headers = finalJsonData[foundHeaderRow].map(h => String(h || "").trim());
+      const headerRowData = finalJsonData[foundHeaderRow];
+      if (!headerRowData) {
+        toast.error("Cabeçalho não encontrado.");
+        return;
+      }
+      const headers = headerRowData.map(h => String(h || "").trim());
+
       const dataRows = finalJsonData.slice(foundHeaderRow + 1);
 
       // Mapping logic
