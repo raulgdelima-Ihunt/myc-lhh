@@ -30,7 +30,18 @@ function Index() {
       setError("E-mail ou senha incorretos");
       setLoading(false);
     } else {
-      navigate({ to: "/admin" });
+      // Check user role to decide redirect
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .single();
+
+      if (roleData?.role === "admin") {
+        navigate({ to: "/admin" });
+      } else {
+        navigate({ to: "/dashboard" });
+      }
     }
   };
 
