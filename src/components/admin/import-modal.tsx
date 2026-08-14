@@ -69,7 +69,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         
         // Scan first 5 lines
         for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
-          const row = jsonData[i].map(cell => String(cell || "").trim().toLowerCase());
+          const rowData = jsonData[i];
+          if (!rowData) continue;
+          const row = rowData.map(cell => String(cell || "").trim().toLowerCase());
+
           const matchCount = keywords.filter(k => 
             row.some(cell => cell.includes(k.toLowerCase()))
           ).length;
