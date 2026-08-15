@@ -1,5 +1,5 @@
 // src/routes/admin-candidato.tsx
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGuard } from "@/components/auth-guard";
@@ -8,18 +8,25 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const searchSchema = z.object({
+  id: z.string().optional(),
+});
 
 export const Route = createFileRoute("/admin-candidato")({
+  validateSearch: (search) => searchSchema.parse(search),
   component: CandidatoDetail,
 });
 
 function CandidatoDetail() {
-  const { id } = useParams({ strict: false }) as { id: string };
+  const { id } = useSearch({ from: "/admin-candidato" });
+  const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
 
-  const { data: candidato, isLoading: isLoadingCandidato } = useCandidato(id);
-  const { data: indicacoes, isLoading: isLoadingIndicacoes } = useCandidatoIndicacoes(id);
+  const { data: candidato, isLoading: isLoadingCandidato } = useCandidato(id || "");
+  const { data: indicacoes, isLoading: isLoadingIndicacoes } = useCandidatoIndicacoes(id || "");
 
   const handleCreateAccess = async () => {
     if (!candidato?.email) return;
@@ -45,14 +52,15 @@ function CandidatoDetail() {
   };
 
   if (isLoadingCandidato) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
+  if (!id) return <div className="p-8 text-center">ID do candidato não fornecido.</div>;
 
   return (
     <AuthGuard>
       <div className="p-8 max-w-6xl mx-auto space-y-6">
         <p className="bg-yellow-100 p-2 text-yellow-800 text-xs rounded border border-yellow-200">
-          DEBUG: Esta página carregou (NOVA ROTA). ID recebido: {id}
+          DEBUG: Esta página carregou (NOVA ROTA COM SEARCH PARAMS). ID recebido: {id}
         </p>
-        <Button variant="ghost" onClick={() => window.location.href = "/admin"} className="mb-4">
+        <Button variant="ghost" onClick={() => navigate({ to: "/admin" })} className="mb-4">
           <ArrowLeft className="mr-2" /> Voltar
         </Button>
 
