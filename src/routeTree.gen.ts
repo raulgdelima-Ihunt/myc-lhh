@@ -10,17 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AdminCandidatoIdRouteImport } from './routes/admin/candidato.$id'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminCandidatoIdRouteImport } from './routes/admin.candidato.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRouteRoute = AdminRouteRouteImport.update({
+const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
@@ -33,17 +33,17 @@ const DashboardRoute = DashboardRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminRouteRoute,
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminCandidatoIdRoute = AdminCandidatoIdRouteImport.update({
   id: '/candidato/$id',
   path: '/candidato/$id',
-  getParentRoute: () => AdminRouteRoute,
+  getParentRoute: () => AdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
@@ -57,7 +57,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRouteWithChildren
+  '/admin': typeof AdminRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
@@ -78,7 +78,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  AdminRoute: typeof AdminRouteWithChildren
   DashboardRoute: typeof DashboardRoute
 }
 
@@ -95,7 +95,7 @@ declare module '@tanstack/react-router' {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteRouteImport
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -110,35 +110,33 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
+      parentRoute: typeof AdminRoute
     }
     '/admin/candidato/$id': {
       id: '/admin/candidato/$id'
       path: '/candidato/$id'
       fullPath: '/admin/candidato/$id'
       preLoaderRoute: typeof AdminCandidatoIdRouteImport
-      parentRoute: typeof AdminRouteRoute
+      parentRoute: typeof AdminRoute
     }
   }
 }
 
-interface AdminRouteRouteChildren {
+interface AdminRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCandidatoIdRoute: typeof AdminCandidatoIdRoute
 }
 
-const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+const AdminRouteChildren: AdminRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   AdminCandidatoIdRoute: AdminCandidatoIdRoute,
 }
 
-const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
-  AdminRouteRouteChildren,
-)
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRouteRoute: AdminRouteRouteWithChildren,
+  AdminRoute: AdminRouteWithChildren,
   DashboardRoute: DashboardRoute,
 }
 export const routeTree = rootRouteImport
