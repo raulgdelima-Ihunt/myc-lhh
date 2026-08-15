@@ -18,7 +18,7 @@ import { useCandidatos, useAdminStats } from "@/hooks/use-candidatos";
 import { ImportCandidatosModal } from "@/components/admin/import-modal";
 import { ImportIndicacoesModal } from "@/components/admin/import-indicacoes-modal";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/admin/")({
   component: AdminPage,
 });
 
