@@ -13,7 +13,7 @@ export const Route = createFileRoute("/admin/candidato/$id")({
 });
 
 function CandidatoDetail() {
-  const { id } = useParams({ from: "/admin/candidato/\$id" });
+  const { id } = useParams({ from: "/admin/candidato/$id" });
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
@@ -52,7 +52,7 @@ function CandidatoDetail() {
         <p className="bg-yellow-100 p-2 text-yellow-800 text-xs rounded border border-yellow-200">
           DEBUG: Esta página carregou. ID recebido: {id}
         </p>
-        <Button variant="ghost" onClick={() => navigate({ to: "/admin" })} className="mb-4">
+        <Button variant="ghost" onClick={() => window.location.href = "/admin"} className="mb-4">
           <ArrowLeft className="mr-2" /> Voltar
         </Button>
 
