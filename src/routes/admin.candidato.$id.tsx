@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
+import { createCandidateAccess } from "@/lib/auth.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/candidato/$id")({
@@ -34,24 +35,28 @@ function CandidatoDetail() {
     setIsCreating(true);
     const pass = Math.random().toString(36).slice(-8);
     
-    const { data, error } = await supabase.auth.signUp({
-      email: candidato.email,
-      password: pass,
-    });
-
-    if (error) {
-      if (error.message.includes("already registered") || error.message.includes("User already registered")) {
-        setHasAccess(true);
-        toast.info("Este candidato já tem acesso configurado.");
-      } else {
-        toast.error("Erro ao criar acesso: " + error.message);
-      }
-    } else {
+    try {
+      await createCandidateAccess({
+        data: {
+          email: candidato.email,
+          password: pass,
+        }
+      });
+      
       setTempPassword(pass);
       setHasAccess(true);
       toast.success("Acesso criado com sucesso!");
+    } catch (error: any) {
+      const message = error.message || "";
+      if (message.includes("already registered") || message.includes("User already registered")) {
+        setHasAccess(true);
+        toast.info("Este candidato já tem acesso configurado.");
+      } else {
+        toast.error("Erro ao criar acesso: " + message);
+      }
+    } finally {
+      setIsCreating(false);
     }
-    setIsCreating(false);
   };
 
   if (isLoadingCandidato) return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
