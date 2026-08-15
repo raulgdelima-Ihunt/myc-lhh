@@ -231,13 +231,16 @@ function DashboardPage() {
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                                ind.resultado?.toLowerCase().includes('aprovado') ? 'bg-green-100 text-green-700' :
-                                ind.resultado?.toLowerCase().includes('reprovado') ? 'bg-red-100 text-red-700' :
+                                ind.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-green-700' :
+                                ind.resultado?.toLowerCase().includes('cv enviado') ? 'bg-blue-100 text-blue-700' :
+                                (ind.resultado?.toLowerCase().includes('não indicado') || ind.resultado?.toLowerCase().includes('perfil não aderente')) ? 'bg-gray-100 text-gray-600' :
+                                (!ind.resultado || ind.resultado.toLowerCase().includes('sem retorno')) ? 'bg-gray-50 text-gray-400' :
                                 'bg-gray-100 text-gray-700'
                               }`}>
-                                {ind.resultado || 'Em análise'}
+                                {ind.resultado || 'Sem retorno'}
                               </span>
                             </td>
+
                           </tr>
                         ))}
                       </tbody>
