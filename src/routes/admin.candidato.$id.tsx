@@ -13,7 +13,7 @@ export const Route = createFileRoute("/admin/candidato/$id")({
 });
 
 function CandidatoDetail() {
-  const { id } = useParams({ from: "/admin/candidato/$id" });
+  const { id } = useParams({ from: "/admin/candidato/\$id" });
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
