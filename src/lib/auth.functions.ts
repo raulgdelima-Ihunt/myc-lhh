@@ -3,13 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const createCandidateAccess = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .input(
+  .validator((data: unknown) => 
     z.object({
       email: z.string().email(),
       password: z.string().min(6),
-    })
+    }).parse(data)
   )
+  .middleware([requireSupabaseAuth])
   .handler(async ({ data, context }) => {
     // 1. Check if the caller is an admin
     const { data: roleData, error: roleError } = await context.supabase
