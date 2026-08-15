@@ -212,19 +212,22 @@ function DashboardPage() {
                           <tr key={ind.id} className="hover:bg-gray-50/50 transition">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{ind.vaga}</span>
-                                {ind.vaga_link && (
+                                {ind.vaga_link ? (
                                   <a 
                                     href={ind.vaga_link} 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="text-violet-600 hover:text-violet-800"
+                                    className="font-medium text-violet-600 hover:text-violet-800 flex items-center gap-1 group"
                                   >
-                                    <ExternalLink size={14} />
+                                    {ind.vaga}
+                                    <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                                   </a>
+                                ) : (
+                                  <span className="font-medium text-gray-900">{ind.vaga}</span>
                                 )}
                               </div>
                             </td>
+
                             <td className="px-6 py-4 text-gray-600">{ind.empresa}</td>
                             <td className="px-6 py-4 text-gray-600 text-sm">
                               {ind.data_acao ? new Date(ind.data_acao).toLocaleDateString('pt-BR') : '-'}
