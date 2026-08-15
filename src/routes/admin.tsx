@@ -204,7 +204,7 @@ function AdminPage() {
                             size="sm"
                             onClick={() => {
                               console.log('Navigating to:', '/admin/candidato/' + c.id);
-                              window.location.href = '/admin/candidato/' + c.id;
+                              window.location.href = '/admin-candidato?id=' + c.id;
                             }}
                           >
                             Ver
