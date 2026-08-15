@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as AdminCandidatoIdRouteImport } from './routes/admin/candidato/$id'
+import { Route as AdminCandidatoIdRouteImport } from './routes/admin.candidato.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
