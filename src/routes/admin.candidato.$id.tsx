@@ -23,16 +23,11 @@ function CandidatoDetail() {
 
   useEffect(() => {
     async function checkAccess() {
-      if (candidato?.email) {
-        const { data } = await supabase.rpc('has_role_by_email', { _email: candidato.email });
-        // Since we don't have this RPC yet, let's just try to check if a user with this email exists in auth.users
-        // But we can't query auth.users directly. 
-        // A better way is to check if they are in user_roles if we linked them.
-        // For now, let's use a simpler approach: if signUp fails with "already registered", they have access.
-      }
+      // Logic to check access if needed, currently using signUp failure as proxy
     }
     checkAccess();
   }, [candidato]);
+
 
   const handleCreateAccess = async () => {
     if (!candidato?.email) return;
