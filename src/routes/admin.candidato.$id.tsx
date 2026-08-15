@@ -49,7 +49,10 @@ function CandidatoDetail() {
   return (
     <AuthGuard>
       <div className="p-8 max-w-6xl mx-auto space-y-6">
-        <Button variant="ghost" onClick={() => navigate({ to: "/admin" })} className="mb-4">
+        <p className="bg-yellow-100 p-2 text-yellow-800 text-xs rounded border border-yellow-200">
+          DEBUG: Esta página carregou. ID recebido: {id}
+        </p>
+        <Button variant="ghost" onClick={() => window.location.href = "/admin"} className="mb-4">
           <ArrowLeft className="mr-2" /> Voltar
         </Button>
 
