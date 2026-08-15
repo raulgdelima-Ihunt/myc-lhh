@@ -212,32 +212,38 @@ function DashboardPage() {
                           <tr key={ind.id} className="hover:bg-gray-50/50 transition">
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{ind.vaga}</span>
-                                {ind.vaga_link && (
+                                {ind.vaga_link ? (
                                   <a 
                                     href={ind.vaga_link} 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="text-violet-600 hover:text-violet-800"
+                                    className="font-medium text-violet-600 hover:text-violet-800 flex items-center gap-1 group"
                                   >
-                                    <ExternalLink size={14} />
+                                    {ind.vaga}
+                                    <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                                   </a>
+                                ) : (
+                                  <span className="font-medium text-gray-900">{ind.vaga}</span>
                                 )}
                               </div>
                             </td>
+
                             <td className="px-6 py-4 text-gray-600">{ind.empresa}</td>
                             <td className="px-6 py-4 text-gray-600 text-sm">
                               {ind.data_acao ? new Date(ind.data_acao).toLocaleDateString('pt-BR') : '-'}
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                                ind.resultado?.toLowerCase().includes('aprovado') ? 'bg-green-100 text-green-700' :
-                                ind.resultado?.toLowerCase().includes('reprovado') ? 'bg-red-100 text-red-700' :
+                                ind.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-green-700' :
+                                ind.resultado?.toLowerCase().includes('cv enviado') ? 'bg-blue-100 text-blue-700' :
+                                (ind.resultado?.toLowerCase().includes('não indicado') || ind.resultado?.toLowerCase().includes('perfil não aderente')) ? 'bg-gray-100 text-gray-600' :
+                                (!ind.resultado || ind.resultado.toLowerCase().includes('sem retorno')) ? 'bg-gray-50 text-gray-400' :
                                 'bg-gray-100 text-gray-700'
                               }`}>
-                                {ind.resultado || 'Em análise'}
+                                {ind.resultado || 'Sem retorno'}
                               </span>
                             </td>
+
                           </tr>
                         ))}
                       </tbody>

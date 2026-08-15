@@ -178,17 +178,22 @@ function AdminPage() {
                     <TableHead>Nível de Cargo</TableHead>
                     <TableHead>Consultor</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
+
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {candidatos.map((c) => (
                     <TableRow 
                       key={c.id} 
-                      className="hover:bg-gray-50"
+                      className="hover:bg-gray-100 cursor-pointer transition-colors"
+                      onClick={() => window.location.href = '/admin/candidato/' + c.id}
                     >
+
                       <TableCell className="font-medium text-gray-900">{c.nome}</TableCell>
-                      <TableCell className="text-gray-600">{c.email || "-"}</TableCell>
+                      <TableCell className="text-gray-600">
+                        {c.email ? c.email : <span className="text-gray-400 italic text-sm">Sem e-mail</span>}
+                      </TableCell>
+
                       <TableCell className="text-gray-600">{c.area || "-"}</TableCell>
                       <TableCell className="text-gray-600">{c.nivel_cargo || "-"}</TableCell>
                       <TableCell className="text-gray-600">{c.consultor_responsavel || "-"}</TableCell>
@@ -198,17 +203,11 @@ function AdminPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="secondary" 
-                          size="sm"
-                          onClick={() => {
-                            console.log('Navigating to:', '/admin/candidato/' + c.id);
-                            window.location.href = '/admin/candidato/' + c.id;
-                          }}
-                        >
-                          Ver
-                        </Button>
+                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                          {c.status}
+                        </span>
                       </TableCell>
+
                     </TableRow>
                   ))}
                 </TableBody>
