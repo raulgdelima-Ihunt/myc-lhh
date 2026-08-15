@@ -26,7 +26,7 @@ function CandidatoDetail() {
     setIsCreating(true);
     const pass = Math.random().toString(36).slice(-8);
     
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: candidato.email,
       password: pass,
     });
@@ -49,7 +49,12 @@ function CandidatoDetail() {
   return (
     <AuthGuard>
       <div className="p-8 max-w-6xl mx-auto space-y-6">
-        <Button variant="ghost" onClick={() => navigate({ to: "/admin" })} className="mb-4">
+        <div className="bg-yellow-100 p-4 text-yellow-800 font-bold rounded border border-yellow-200 shadow-sm mb-6 flex items-center gap-2">
+          <div className="h-2 w-2 bg-yellow-600 rounded-full animate-pulse" />
+          DEBUG: Rota /admin/candidato/{id} carregada com sucesso!
+        </div>
+        
+        <Button variant="ghost" onClick={() => window.location.href = "/admin"} className="mb-4">
           <ArrowLeft className="mr-2" /> Voltar
         </Button>
 
