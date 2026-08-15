@@ -13,7 +13,7 @@ export const Route = createFileRoute("/admin/candidato/$id")({
 });
 
 function CandidatoDetail() {
-  const { id } = useParams({ from: "/admin/candidato/\$id" });
+  const { id } = useParams({ from: "/admin/candidato/$id" });
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
@@ -49,9 +49,11 @@ function CandidatoDetail() {
   return (
     <AuthGuard>
       <div className="p-8 max-w-6xl mx-auto space-y-6">
-        <p className="bg-yellow-100 p-2 text-yellow-800 text-xs rounded border border-yellow-200">
-          DEBUG: Esta página carregou. ID recebido: {id}
-        </p>
+        <div className="bg-yellow-100 p-4 text-yellow-800 font-bold rounded border border-yellow-200 shadow-sm mb-6 flex items-center gap-2">
+          <div className="h-2 w-2 bg-yellow-600 rounded-full animate-pulse" />
+          DEBUG: Rota /admin/candidato/{id} carregada com sucesso!
+        </div>
+        
         <Button variant="ghost" onClick={() => window.location.href = "/admin"} className="mb-4">
           <ArrowLeft className="mr-2" /> Voltar
         </Button>
