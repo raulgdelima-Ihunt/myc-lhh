@@ -68,12 +68,16 @@ function Index() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100">
         <div className="mb-8 text-center">
-          <div className="mb-4 text-center">
-            <h1 className="text-xl font-normal text-primary">my</h1>
-            <h1 className="text-2xl font-bold text-primary">career</h1>
-            <p className="text-sm font-semibold text-primary uppercase">by LHH</p>
+          <div className="mb-6 flex flex-col items-center">
+            <img 
+              src="/logo.svg" 
+              alt="MyCareer by LHH" 
+              className="w-[200px] h-auto mb-2" 
+            />
+            <p className="text-sm font-semibold text-[#666666]">Portal de Acompanhamento</p>
           </div>
         </div>
+
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>

@@ -134,19 +134,20 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(0.3 0.01 270);
   --sidebar-ring: oklch(0.551 0.027 264.364);
-
-
+}
+ 
 @layer base {
   * {
     border-color: var(--color-border);
   }
-
+ 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
 }
-
+ 
 #lovable-badge {
   display: none !important;
 }
+

@@ -79,21 +79,31 @@ function CandidatoDetail() {
 
   return (
     <AuthGuard>
+      <header className="bg-white border-b border-border shadow-sm">
+        <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src="/logo.svg" alt="LHH" className="w-[120px] h-auto" />
+            <span className="h-6 w-px bg-border hidden sm:block" />
+            <h1 className="text-lg font-bold text-[#333333] hidden sm:block">Painel Administrativo</h1>
+          </div>
+          <button
+            onClick={() => window.location.href = "/admin"}
+            className="flex items-center rounded-[6px] border border-border px-4 py-2 text-sm font-medium text-[#666666] transition hover:bg-gray-50"
+          >
+            <ArrowLeft size={18} className="mr-2" />
+            Voltar
+          </button>
+        </div>
+      </header>
+
       <div className="min-h-screen bg-[#F5F5F5] p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => window.location.href = "/admin"} 
-            className="mb-4 text-[#666666] hover:text-primary rounded-[6px]"
-          >
-            <ArrowLeft className="mr-2" size={18} /> Voltar ao Painel
-          </Button>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="bg-white p-8 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border md:col-span-2 space-y-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <h1 className="text-3xl font-bold text-[#333333] tracking-tight">{candidato?.nome}</h1>
+
                   <p className="text-[#666666] font-medium">{candidato?.email || "E-mail não informado"}</p>
                   <div className="flex flex-wrap gap-2 mt-4">
                     <span className="text-xs bg-[#F5F5F5] text-[#666666] px-3 py-1 rounded-full font-semibold border border-border">

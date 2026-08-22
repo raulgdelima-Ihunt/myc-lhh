@@ -93,11 +93,14 @@ function DashboardPage() {
         {/* Header */}
         <header className="bg-primary shadow-[0_2px_8px_rgba(0,0,0,0.08)] sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-white font-bold">
-              <Briefcase size={24} />
-              <span className="hidden sm:inline">PORTAL DE ACOMPANHAMENTO — LHH</span>
-              <span className="sm:hidden">LHH Portal</span>
+            <div className="flex items-center gap-4">
+              <img 
+                src="/logo.svg" 
+                alt="MyCareer by LHH" 
+                className="w-[120px] h-auto brightness-0 invert" 
+              />
             </div>
+
             <button
               onClick={handleLogout}
               className="flex items-center rounded-[6px] border border-white/20 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/10 transition"

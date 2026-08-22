@@ -47,13 +47,17 @@ function AdminPage() {
       <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="flex items-center justify-between rounded-xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-[#333333]">Painel Administrativo</h1>
-            <div className="mt-1 flex items-center text-sm text-[#666666]">
-              <User size={16} className="mr-1.5" />
-              <span>Logado como: {user?.email}</span>
+          <div className="flex items-center gap-4">
+            <img src="/logo.svg" alt="LHH" className="w-[120px] h-auto" />
+            <div>
+              <h1 className="text-2xl font-bold text-[#333333]">Painel Administrativo</h1>
+              <div className="mt-1 flex items-center text-sm text-[#666666]">
+                <User size={16} className="mr-1.5" />
+                <span>Logado como: {user?.email}</span>
+              </div>
             </div>
           </div>
+
           <div className="flex gap-3">
             <Button
               onClick={() => setIsImportModalOpen(true)}
