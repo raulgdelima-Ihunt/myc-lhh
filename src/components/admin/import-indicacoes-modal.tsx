@@ -354,7 +354,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       toast.success(`${insertedCount} indicações processadas com sucesso.`);
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error importing indications:", error);
       toast.error(`Erro ao importar indicações: ${error.message || "Erro desconhecido"}`);
     } finally {
