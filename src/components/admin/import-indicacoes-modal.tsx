@@ -395,7 +395,19 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
               <Loader2 className="h-8 w-8 animate-spin text-violet-600 mb-4" />
               <p>Processando abas e vinculando clientes...</p>
             </div>
+          ) : isUploading ? (
+            <div className="flex flex-col items-center justify-center p-12 space-y-4">
+              <div className="w-full max-w-md bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div 
+                  className="bg-violet-600 h-full transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-lg font-medium text-violet-900">{uploadProgress}% completo</p>
+              <p className="text-sm text-gray-500 italic">Gravando indicações vinculadas no banco de dados...</p>
+            </div>
           ) : (
+
             <div className="space-y-6">
               <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
                 <div className="font-bold text-violet-700 mb-1">Abas processadas: {debugLog.processed.join(", ") || "Nenhuma"}</div>
