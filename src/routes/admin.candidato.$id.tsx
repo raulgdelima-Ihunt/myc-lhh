@@ -13,6 +13,30 @@ export const Route = createFileRoute("/admin/candidato/$id")({
   component: CandidatoDetail,
 });
 
+function DataField({ label, value, isLink }: { label: string; value?: any; isLink?: boolean }) {
+  if (!value) return null;
+  const displayValue = String(value).trim();
+  if (!displayValue || displayValue === "-" || displayValue === "0") return null;
+
+  return (
+    <div>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{label}</p>
+      {isLink ? (
+        <a 
+          href={displayValue.startsWith('http') ? displayValue : `https://${displayValue}`} 
+          target="_blank" 
+          rel="noreferrer"
+          className="text-sm text-violet-600 hover:underline font-medium break-all"
+        >
+          {displayValue}
+        </a>
+      ) : (
+        <p className="text-sm text-gray-700 font-medium">{displayValue}</p>
+      )}
+    </div>
+  );
+}
+
 function CandidatoDetail() {
   const { id } = useParams({ from: "/admin/candidato/$id" });
   const [isCreating, setIsCreating] = useState(false);
