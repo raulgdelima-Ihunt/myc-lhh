@@ -263,19 +263,20 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           vinculado: false, 
           manual_ignore: true, 
           candidato_id: null 
-        };
+        } as MappedIndication;
       } else {
         newData[index] = { 
           ...item, 
           vinculado: true, 
           manual_ignore: false, 
           candidato_id: candidatoId 
-        };
+        } as MappedIndication;
       }
       updateStats(newData);
       return newData;
     });
   };
+
 
 
   const handleConfirmImport = async () => {
