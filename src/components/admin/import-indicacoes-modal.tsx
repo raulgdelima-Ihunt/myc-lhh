@@ -256,16 +256,17 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
   const handleManualVinculation = (index: number, candidatoId: string | 'ignore') => {
     setPreviewData(prev => {
       const newData = [...prev];
+      const item = newData[index];
       if (candidatoId === 'ignore') {
         newData[index] = { 
-          ...newData[index], 
+          ...item, 
           vinculado: false, 
           manual_ignore: true, 
           candidato_id: null 
         };
       } else {
         newData[index] = { 
-          ...newData[index], 
+          ...item, 
           vinculado: true, 
           manual_ignore: false, 
           candidato_id: candidatoId 
@@ -275,6 +276,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       return newData;
     });
   };
+
 
   const handleConfirmImport = async () => {
     if (!previewData.length) return;
