@@ -312,15 +312,6 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         await Promise.all(chunk.map(async (item) => {
           if (!item.candidato_id) return;
 
-          const { data: existing } = await (supabase
-            .from("indicacoes")
-            .select("id") as any)
-            .eq("candidato_id", item.candidato_id)
-            .eq("vaga", item.vaga)
-            .eq("empresa", item.empresa)
-            .eq("data_acao", item.data_acao || "")
-            .maybeSingle();
-
           const dataToUpsert = {
             candidato_id: item.candidato_id,
             vaga: item.vaga,
@@ -328,7 +319,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             indicacao_contato: item.indicacao_contato,
             vaga_link: item.vaga_link,
             formato: item.formato,
-            data_acao: item.data_acao,
+            data_acao: item.data_acao || null,
             resultado: item.resultado,
             jobhunter: item.jobhunter,
             origem: (item as any).origem,
@@ -338,32 +329,34 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             observacoes: (item as any).observacoes,
           };
 
-          if (existing) {
-            const { error: updateError } = await (supabase
-              .from("indicacoes")
-              .update(dataToUpsert as any) as any)
-              .eq("id", existing.id);
-            if (updateError) throw updateError;
-            updatedCount++;
-          } else {
-            const { error: insertError } = await (supabase
-              .from("indicacoes")
-              .insert(dataToUpsert as any) as any);
-            if (insertError) throw insertError;
-            insertedCount++;
+          const { data: upserted, error: upsertError } = await (supabase
+            .from("indicacoes")
+            .upsert(dataToUpsert as any, {
+              onConflict: 'candidato_id,vaga,empresa,data_acao',
+              ignoreDuplicates: false
+            })
+            .select('id') as any);
+
+          if (upsertError) {
+            console.error("Upsert error details:", upsertError);
+            throw upsertError;
           }
+
+          // Since we use upsert, we count total processed. 
+          // If we need distinct counts, we'd need to check if it was an insert or update.
+          insertedCount++; 
         }));
 
         const currentProgress = Math.min(Math.round(((i + chunk.length) / totalItems) * 100), 100);
         setUploadProgress(currentProgress);
       }
 
-      toast.success(`${insertedCount} novas indicações, ${updatedCount} atualizadas.`);
+      toast.success(`${insertedCount} indicações processadas com sucesso.`);
       onSuccess();
       onClose();
     } catch (error) {
       console.error("Error importing indications:", error);
-      toast.error("Erro ao importar indicações.");
+      toast.error(`Erro ao importar indicações: ${error.message || "Erro desconhecido"}`);
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
