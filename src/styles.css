@@ -1,6 +1,10 @@
-@import "tailwindcss" source(none);
-@source "../src";
+@import "tailwindcss";
 @import "tw-animate-css";
+
+:root {
+  font-family: 'Montserrat', sans-serif;
+}
+
 
 @custom-variant dark (&:is(.dark *));
 

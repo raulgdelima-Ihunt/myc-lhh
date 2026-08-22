@@ -66,14 +66,13 @@ function Index() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-gray-100">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100">
         <div className="mb-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 mb-4">
-            <Briefcase size={32} />
+          <div className="mb-4 text-center">
+            <h1 className="text-xl font-normal text-primary">my</h1>
+            <h1 className="text-2xl font-bold text-primary">career</h1>
+            <p className="text-sm font-semibold text-primary uppercase">by LHH</p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            PORTAL DE ACOMPANHAMENTO — LHH
-          </h1>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -85,7 +84,7 @@ function Index() {
                 placeholder="E-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-border py-2.5 pl-10 pr-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 required
               />
             </div>
@@ -99,7 +98,7 @@ function Index() {
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-lg border border-border py-2.5 pl-10 pr-10 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 required
               />
               <button
@@ -112,24 +111,24 @@ function Index() {
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-indigo-600 py-2.5 font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-70"
+            className="w-full rounded-[6px] bg-primary py-2.5 font-semibold text-white transition hover:bg-[#5A2574] disabled:opacity-70"
           >
             {loading ? "Acessando..." : "Acessar Portal"}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <a href="#" className="text-indigo-600 hover:underline">
+          <a href="#" className="text-primary hover:underline">
             Esqueci minha senha
           </a>
         </div>
 
-        <div className="mt-8 border-t pt-6 text-center text-sm text-gray-500">
+        <div className="mt-8 border-t border-border pt-6 text-center text-sm text-gray-500">
           <p>Acesso exclusivo para clientes LHH</p>
           <p className="mt-2 text-xs">© 2026 LHH Recruitment Portal</p>
         </div>
