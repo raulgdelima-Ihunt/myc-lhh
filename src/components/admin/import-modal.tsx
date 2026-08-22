@@ -278,11 +278,25 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         const chunk = previewData.slice(i, i + chunkSize);
         
         for (const candidate of chunk) {
-          const { data: existing } = await supabase
-            .from("candidatos")
-            .select("id")
-            .eq("nome_normalizado", candidate.nome_normalizado)
-            .maybeSingle();
+          let existing = null;
+
+          if (candidate.referral_id) {
+            const { data } = await supabase
+              .from("candidatos")
+              .select("id")
+              .eq("referral_id", candidate.referral_id)
+              .maybeSingle();
+            existing = data;
+          }
+
+          if (!existing) {
+            const { data } = await supabase
+              .from("candidatos")
+              .select("id")
+              .eq("nome_normalizado", candidate.nome_normalizado)
+              .maybeSingle();
+            existing = data;
+          }
 
           if (existing) {
             const { error: updateError } = await supabase
