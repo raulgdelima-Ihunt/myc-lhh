@@ -87,35 +87,49 @@ function CandidatoDetail() {
 
   return (
     <AuthGuard>
-      <div className="p-8 max-w-6xl mx-auto space-y-6">
-        <Button variant="ghost" onClick={() => window.location.href = "/admin"} className="mb-4">
-          <ArrowLeft className="mr-2" /> Voltar
-        </Button>
+      <div className="min-h-screen bg-[#F5F5F5] p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => window.location.href = "/admin"} 
+            className="mb-4 text-[#666666] hover:text-primary rounded-[6px]"
+          >
+            <ArrowLeft className="mr-2" size={18} /> Voltar ao Painel
+          </Button>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 md:col-span-2 space-y-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{candidato?.nome}</h1>
-                <p className="text-gray-500">{candidato?.email || "E-mail não informado"}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{(candidato as any)?.area}</span>
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{(candidato as any)?.nivel_cargo}</span>
-                  {(candidato as any)?.referral_id && (
-                    <span className="text-xs bg-violet-50 text-violet-600 px-2 py-1 rounded font-medium border border-violet-100">
-                      REF: {(candidato as any).referral_id}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white p-8 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border md:col-span-2 space-y-6">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <h1 className="text-3xl font-bold text-[#333333] tracking-tight">{candidato?.nome}</h1>
+                  <p className="text-[#666666] font-medium">{candidato?.email || "E-mail não informado"}</p>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <span className="text-xs bg-[#F5F5F5] text-[#666666] px-3 py-1 rounded-full font-semibold border border-border">
+                      {(candidato as any)?.area}
                     </span>
-                  )}
+                    <span className="text-xs bg-[#F5F5F5] text-[#666666] px-3 py-1 rounded-full font-semibold border border-border">
+                      {(candidato as any)?.nivel_cargo}
+                    </span>
+                    {(candidato as any)?.referral_id && (
+                      <span className="text-xs bg-[#F0EBF5] text-primary px-3 py-1 rounded-full font-bold border border-[#D8C9E3]">
+                        ID: {(candidato as any).referral_id}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex flex-col items-end gap-3">
-                {candidato?.email && !hasAccess && !tempPassword && (
-                  <Button onClick={handleCreateAccess} disabled={isCreating} className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-all active:scale-95">
-                    {isCreating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-                    Criar acesso
-                  </Button>
-                )}
+                <div className="flex flex-col items-end gap-3">
+                  {candidato?.email && !hasAccess && !tempPassword && (
+                    <Button 
+                      onClick={handleCreateAccess} 
+                      disabled={isCreating} 
+                      className="bg-primary hover:bg-[#5A2574] text-white shadow-sm transition-all active:scale-95 rounded-[6px] px-6"
+                    >
+                      {isCreating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                      Criar Acesso ao Portal
+                    </Button>
+                  )}
+
                 
                 {hasAccess && !tempPassword && (
                   <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-medium text-sm">
@@ -175,39 +189,40 @@ function CandidatoDetail() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            <Card className="border-none shadow-sm bg-white">
-              <CardContent className="pt-6">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Indicações</p>
-                <p className="text-3xl font-black text-violet-600">{indicacoes?.length || 0}</p>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-sm bg-white">
-              <CardContent className="pt-6">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Empresas Únicas</p>
-                <p className="text-3xl font-black text-blue-600">
-                  {new Set(indicacoes?.map(i => i.empresa)).size}
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-none shadow-sm bg-white">
-              <CardContent className="pt-6">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Última Indicação</p>
-                <p className="text-xl font-bold text-gray-800">
-                  {indicacoes?.[0]?.data_acao ? new Date(indicacoes[0].data_acao).toLocaleDateString('pt-BR') : '-'}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 gap-6">
+              <Card className="border-none shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-white border-l-4 border-l-primary">
+                <CardContent className="pt-6">
+                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">Total Indicações</p>
+                  <p className="text-4xl font-black text-primary">{indicacoes?.length || 0}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-white border-l-4 border-l-[#4CAF50]">
+                <CardContent className="pt-6">
+                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">Empresas Únicas</p>
+                  <p className="text-4xl font-black text-[#4CAF50]">
+                    {new Set(indicacoes?.map(i => i.empresa)).size}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="border-none shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-white border-l-4 border-l-amber-400">
+                <CardContent className="pt-6">
+                  <p className="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">Última Indicação</p>
+                  <p className="text-xl font-bold text-[#333333]">
+                    {indicacoes?.[0]?.data_acao ? new Date(indicacoes[0].data_acao).toLocaleDateString('pt-BR') : '-'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-bold text-gray-900 text-lg">Histórico de Indicações</h2>
-            <span className="text-xs bg-gray-50 text-gray-500 px-3 py-1 rounded-full font-medium border border-gray-100">
-              {indicacoes?.length || 0} registros
-            </span>
-          </div>
+          <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
+            <div className="p-6 border-b border-border flex items-center justify-between bg-[#FAFAFA]">
+              <h2 className="font-bold text-[#333333] text-lg">Histórico de Indicações</h2>
+              <span className="text-xs bg-white text-[#666666] px-4 py-1.5 rounded-full font-bold border border-border shadow-sm">
+                {indicacoes?.length || 0} REGISTROS
+              </span>
+            </div>
+
           {isLoadingIndicacoes ? (
             <div className="p-12 text-center">
               <Loader2 className="animate-spin mx-auto text-violet-500" />

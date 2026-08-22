@@ -209,9 +209,9 @@ function DashboardPage() {
                         </tr>
                       </thead>
 
-                      <tbody className="divide-y divide-gray-100">
-                        {filteredIndicacoes.map((ind) => (
-                          <tr key={ind.id} className="hover:bg-gray-50/50 transition">
+                      <tbody className="divide-y divide-border">
+                        {filteredIndicacoes.map((ind, index) => (
+                          <tr key={ind.id} className={`transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
                                 {ind.vaga_link ? (
@@ -219,36 +219,36 @@ function DashboardPage() {
                                     href={ind.vaga_link} 
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="font-medium text-violet-600 hover:text-violet-800 flex items-center gap-1 group"
+                                    className="font-medium text-primary hover:underline flex items-center gap-1 group"
                                   >
                                     {ind.vaga}
                                     <ExternalLink size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                                   </a>
                                 ) : (
-                                  <span className="font-medium text-gray-900">{ind.vaga}</span>
+                                  <span className="font-medium text-[#333333]">{ind.vaga}</span>
                                 )}
                               </div>
                             </td>
 
-                            <td className="px-6 py-4 text-gray-600">{ind.empresa}</td>
-                            <td className="px-6 py-4 text-gray-600 text-sm">
+                            <td className="px-6 py-4 text-[#666666]">{ind.empresa}</td>
+                            <td className="px-6 py-4 text-[#666666] text-sm">
                               {ind.data_acao ? new Date(ind.data_acao).toLocaleDateString('pt-BR') : '-'}
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                                ind.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-green-700' :
-                                ind.resultado?.toLowerCase().includes('cv enviado') ? 'bg-blue-100 text-blue-700' :
-                                (ind.resultado?.toLowerCase().includes('não indicado') || ind.resultado?.toLowerCase().includes('perfil não aderente')) ? 'bg-gray-100 text-gray-600' :
+                                ind.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-[#4CAF50]' :
+                                ind.resultado?.toLowerCase().includes('cv enviado') ? 'bg-purple-100 text-primary' :
+                                (ind.resultado?.toLowerCase().includes('não indicado') || ind.resultado?.toLowerCase().includes('perfil não aderente')) ? 'bg-gray-100 text-[#666666]' :
                                 (!ind.resultado || ind.resultado.toLowerCase().includes('sem retorno')) ? 'bg-gray-50 text-gray-400' :
-                                'bg-gray-100 text-gray-700'
+                                'bg-gray-100 text-[#333333]'
                               }`}>
                                 {ind.resultado || 'Sem retorno'}
                               </span>
                             </td>
-
                           </tr>
                         ))}
                       </tbody>
+
                     </table>
                   ) : (
                     <div className="p-16 text-center">
