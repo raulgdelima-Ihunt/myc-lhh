@@ -103,7 +103,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       let targetSheetName = "";
       let foundHeaderRow = -1;
       let finalJsonData: any[][] = [];
-      const keywords = ["Assessorado", "Email", "Parceiro", "Área", "Jobhunter", "Nível de Cargo", "Último Salário", "Telefone"];
+      const keywords = ["Assessorado", "Email", "Parceiro", "Área", "Jobhunter", "Nível de Cargo", "Último Salário", "Telefone", "REFERRAL", "NOME"];
 
       for (const sheetName of priorityOrder) {
         const worksheet = workbook.Sheets[sheetName];
@@ -130,8 +130,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       }
 
       if (foundHeaderRow === -1) {
-        // Fallback to first sheet row 0 if nothing found
-        const ws = targetSheetName ? workbook.Sheets[targetSheetName] : undefined;
+        const ws = targetSheetName ? workbook.Sheets[targetSheetName] : workbook.Sheets[workbook.SheetNames[0]];
         finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
         foundHeaderRow = 0;
       }
@@ -142,73 +141,110 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         return;
       }
       const headers = headerRowData.map(h => String(h || "").trim());
-
       const dataRows = finalJsonData.slice(foundHeaderRow + 1);
 
       // Mapping logic
-      const getColumnIndex = (patterns: string[], excludeIndex: number = -1) => {
-        return headers.findIndex((h, idx) => {
-          if (idx === excludeIndex) return false;
+      const getColumnIndex = (patterns: string[]) => {
+        return headers.findIndex((h) => {
           const lowerH = h.toLowerCase();
           return patterns.some(p => lowerH.includes(p.toLowerCase()));
         });
       };
 
-      const idxNome = getColumnIndex(["assessorado"]);
-      const idxEmail = getColumnIndex(["email", "e-mail"]);
-      const idxParceiro = getColumnIndex(["parceiro"]);
-      // For "Área", we want to be careful about the "resíduo" in row 0
-      const idxArea = getColumnIndex(["área", "area"]);
-      const idxNivel = getColumnIndex(["nível", "nivel"]);
-      const idxSalario = headers.findIndex(h => {
-        const lh = h.toLowerCase();
-        return (lh.includes("salário") || lh.includes("salario")) && (lh.includes("último") || lh.includes("ultimo"));
-      });
-      const idxTelefone = getColumnIndex(["telefone"]);
-      const idxJobhunter = getColumnIndex(["jobhunter"]);
+      // Detect Format
+      const isNewFormat = getColumnIndex(["REFERRAL"]) !== -1 && getColumnIndex(["NOME"]) !== -1;
 
-      const totalBeforeFilter = dataRows.length;
+      // Base mappings
+      const idxNome = isNewFormat ? getColumnIndex(["NOME"]) : getColumnIndex(["assessorado"]);
+      const idxEmail = getColumnIndex(["email", "e-mail"]);
+      const idxTelefone = getColumnIndex(["telefone"]);
+      const idxConsultor = getColumnIndex(["consultor", "jobhunter"]);
+      const idxParceiro = getColumnIndex(["parceiro"]);
+
+      // New columns mapping
+      const idxReferral = getColumnIndex(["REFERRAL"]);
+      const idxDistribuicao = getColumnIndex(["DISTRIBUIÇÃO"]);
+      const idxLinkedin = getColumnIndex(["LINKEDIN"]);
+      const idxInicio = getColumnIndex(["INÍCIO"]);
+      const idxTermino = getColumnIndex(["TÉRMINO"]);
+      const idxStatusProg = getColumnIndex(["STATUS PROGRAMA"]);
+      const idxUltimaPos = getColumnIndex(["ÚLTIMA POSIÇÃO"]);
+      const idxPosicoesAlvo = getColumnIndex(["POSIÇÕES ALVO", "CARGOS DE INTERESSE"]);
+      const idxUltimoSeg = getColumnIndex(["ÚLTIMO SEGMENTO"]);
+      const idxUltimaEmp = getColumnIndex(["ÚLTIMA EMPRESA"]);
+      const idxSegmentoAlvo = getColumnIndex(["SEGMENTO ALVO"]);
+      const idxPretensao = getColumnIndex(["REMUNERAÇÃO", "PRETENSÃO"]);
+      const idxUltimoSalario = getColumnIndex(["ÚLTIMA REMUNERAÇÃO", "Último Salário"]);
+      const idxMobilidade = getColumnIndex(["MOBILIDADE"]);
+      const idxLocal = getColumnIndex(["LOCAL"]);
+      const idxEmpresasAlvo = getColumnIndex(["EMPRESAS ALVO"]);
+      const idxObservacao = getColumnIndex(["PERFIL CANDIDATO", "OBSERVAÇÃO"]);
+      const idxIdade = getColumnIndex(["IDADE"]);
+      const idxArea = getColumnIndex(["ÁREA"]);
+      const idxNivel = getColumnIndex(["NÍVEL DE CARGO"]);
+
+      const parseDate = (val: any) => {
+        if (!val) return null;
+        if (typeof val === 'number') {
+          const date = XLSX.SSF.parse_date_code(val);
+          return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+        }
+        const d = new Date(val);
+        return isNaN(d.getTime()) ? null : d.toISOString().split('T')[0];
+      };
+
       const filteredRows = dataRows.filter(row => {
         const valNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
         if (!valNome) return false;
 
         if (idxParceiro !== -1) {
           const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
-          // Import only if Parceiro = "LHH" (case-insensitive, trim)
-          // Based on rules: "Se a coluna 'Parceiro' existir: importar APENAS linhas onde Parceiro = 'LHH'"
           return parceiro === "LHH";
         }
         return true;
       });
-      const totalAfterFilter = filteredRows.length;
 
       setDebugInfo({
         sheetName: targetSheetName || "Nenhuma",
         headerRow: foundHeaderRow + 1,
-        columnsFound: headers.filter((_, i) => 
-          [idxNome, idxEmail, idxParceiro, idxArea, idxNivel, idxSalario, idxTelefone, idxJobhunter].includes(i)
-        ),
+        columnsFound: headers.filter((h, i) => h && i !== -1),
         hasPartnerFilter: idxParceiro !== -1,
-        totalBeforeFilter,
-        totalAfterFilter
+        totalBeforeFilter: dataRows.length,
+        totalAfterFilter: filteredRows.length
       });
 
-      const mappedData = filteredRows
-        .map(row => {
-          const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
-          return {
-            nome: rawNome.replace(/\([^)]*\)/g, "").trim(),
-            nome_normalizado: normalizeName(rawNome),
-            email: idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : null,
-            parceiro: idxParceiro !== -1 ? String(row[idxParceiro] || "").trim() : "LHH",
-            area: idxArea !== -1 ? row[idxArea] : null,
-            nivel_cargo: idxNivel !== -1 ? row[idxNivel] : null,
-            ultimo_salario: idxSalario !== -1 ? row[idxSalario] : null,
-            telefone: idxTelefone !== -1 ? row[idxTelefone] : null,
-            consultor_responsavel: idxJobhunter !== -1 ? row[idxJobhunter] : null,
-            status: "ativo",
-          };
-        });
+      const mappedData = filteredRows.map(row => {
+        const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
+        return {
+          referral_id: idxReferral !== -1 ? String(row[idxReferral] || "").trim() : null,
+          nome: rawNome.replace(/\([^)]*\)/g, "").trim(),
+          nome_normalizado: normalizeName(rawNome),
+          email: idxEmail !== -1 && row[idxEmail] ? String(row[idxEmail]).trim() : null,
+          telefone: idxTelefone !== -1 ? String(row[idxTelefone] || "").trim() : null,
+          consultor_responsavel: idxConsultor !== -1 ? String(row[idxConsultor] || "").trim() : null,
+          distribuicao: idxDistribuicao !== -1 ? String(row[idxDistribuicao] || "").trim() : null,
+          linkedin: idxLinkedin !== -1 ? String(row[idxLinkedin] || "").trim() : null,
+          inicio_programa: idxInicio !== -1 ? parseDate(row[idxInicio]) : null,
+          termino_programa: idxTermino !== -1 ? parseDate(row[idxTermino]) : null,
+          status_programa: idxStatusProg !== -1 ? String(row[idxStatusProg] || "").trim() : null,
+          ultima_posicao: idxUltimaPos !== -1 ? String(row[idxUltimaPos] || "").trim() : null,
+          posicoes_alvo: idxPosicoesAlvo !== -1 ? String(row[idxPosicoesAlvo] || "").trim() : null,
+          ultimo_segmento: idxUltimoSeg !== -1 ? String(row[idxUltimoSeg] || "").trim() : null,
+          ultima_empresa: idxUltimaEmp !== -1 ? String(row[idxUltimaEmp] || "").trim() : null,
+          segmento_alvo: idxSegmentoAlvo !== -1 ? String(row[idxSegmentoAlvo] || "").trim() : null,
+          pretensao_salarial: idxPretensao !== -1 ? String(row[idxPretensao] || "").trim() : null,
+          ultimo_salario: idxUltimoSalario !== -1 ? String(row[idxUltimoSalario] || "").trim() : null,
+          mobilidade: idxMobilidade !== -1 ? String(row[idxMobilidade] || "").trim() : null,
+          local_residencia: idxLocal !== -1 ? String(row[idxLocal] || "").trim() : null,
+          empresas_alvo: idxEmpresasAlvo !== -1 ? String(row[idxEmpresasAlvo] || "").trim() : null,
+          observacao: idxObservacao !== -1 ? String(row[idxObservacao] || "").trim() : null,
+          idade: idxIdade !== -1 ? String(row[idxIdade] || "").trim() : null,
+          area: idxArea !== -1 ? String(row[idxArea] || "").trim() : null,
+          nivel_cargo: idxNivel !== -1 ? String(row[idxNivel] || "").trim() : null,
+          parceiro: idxParceiro !== -1 ? String(row[idxParceiro] || "").trim() : "LHH",
+          status: "ativo",
+        };
+      });
 
       setPreviewData(mappedData);
       
