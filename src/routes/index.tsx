@@ -48,7 +48,10 @@ function Index() {
           .from("candidatos")
           .select("id")
           .eq("email", email)
-          .single();
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
 
         if (candidateData) {
           navigate({ to: "/dashboard" });
