@@ -17,9 +17,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Upload, AlertCircle, CheckCircle2, UserPlus } from "lucide-react";
+import { normalizeNameAggressive, getSimilarCandidates } from "@/lib/string-utils";
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -39,12 +47,14 @@ interface MappedIndication {
   resultado: string | null;
   jobhunter: string;
   vinculado: boolean;
+  manual_ignore?: boolean;
+  suggestions?: { id: string; nome: string }[];
 }
 
 export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<MappedIndication[]>([]);
-  const [debugLog, setDebugLog] = useState<{ processed: string[]; ignored: string[] }>({ processed: [], ignored: [] });
+  const [debugLog, setDebugLog] = useState<{ processed: string[]; ignored: { name: string; reason: string }[] }>({ processed: [], ignored: [] });
   const [stats, setStats] = useState({ 
     total: 0, 
     vinculados: 0, 
@@ -52,18 +62,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     novos: 0,
     atualizacoes: 0
   });
-  const [naoVinculadosNomes, setNaoVinculadosNomes] = useState<string[]>([]);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
-  const normalizeName = (name: string) => {
-    if (!name) return "";
-    return name
-      .replace(/\([^)]*\)/g, "")
-      .trim()
-      .toLowerCase();
-  };
 
   const parseExcelDate = (val: any) => {
     if (!val) return null;
@@ -98,13 +99,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       const data = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(data);
       
-      const processed: string[] = [];
-      const ignored: string[] = [];
+      const processedSheets: string[] = [];
+      const ignoredSheets: { name: string; reason: string }[] = [];
       const allMappedData: MappedIndication[] = [];
 
       const { data: candidates } = await (supabase
         .from("candidatos")
-        .select("id, nome_normalizado, referral_id") as any);
+        .select("id, nome, nome_normalizado, referral_id") as any);
       
       const candidatesList = (candidates || []) as any[];
       const candidatesByName = new Map(candidatesList.map(c => [c.nome_normalizado, c.id]));
@@ -118,28 +119,33 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
         
         if (jsonData.length === 0) {
-          ignored.push(sheetName);
+          ignoredSheets.push({ name: sheetName, reason: "Aba vazia" });
           continue;
         }
 
-        const headerRow = (jsonData[0] || []).map(h => String(h || "").trim().toLowerCase());
+        const headerRowIndex = 0; // Assuming header is at line 1
+        const headerRow = (jsonData[headerRowIndex] || []).map(h => String(h || "").trim().toLowerCase());
         const getCol = (patterns: string[]) => headerRow.findIndex(h => patterns.some(p => h.includes(p.toLowerCase())));
+        
+        const idxAcao = getCol(["ação", "indicação", "acao", "indicacao"]);
+        const idxVaga = getCol(["vaga", "posição", "posicao", "vagas"]);
+        const idxEmpresa = getCol(["empresa", "consultoria", "empresa/consultoria"]);
+        
+        // CORRIGIR: Process process ONLY sheets with mandatory columns
+        if (idxAcao === -1 || idxVaga === -1 || idxEmpresa === -1) {
+          const missing = [];
+          if (idxAcao === -1) missing.push("Ação/Indicação");
+          if (idxVaga === -1) missing.push("Vaga/Posição");
+          if (idxEmpresa === -1) missing.push("Empresa");
+          ignoredSheets.push({ name: sheetName, reason: `Colunas ausentes: ${missing.join(", ")}` });
+          continue;
+        }
+
+        processedSheets.push(sheetName);
         
         const idxReferral = getCol(["referral"]);
         const idxNome = getCol(["nome", "cliente", "assessorado"]);
-        
-        if (idxNome === -1 && idxReferral === -1) {
-          ignored.push(sheetName);
-          continue;
-        }
-
-
-        processed.push(sheetName);
-        
-        const idxAcao = getCol(["ação", "acao"]);
-        const idxVaga = getCol(["vaga", "posição", "posicao"]);
         const idxOrigem = getCol(["origem"]);
-        const idxEmpresa = getCol(["empresa", "consultoria"]);
         const idxLink = getCol(["link"]);
         const idxLinkedin = getCol(["linkedin_candidato", "linkedin"]);
         const idxDataAcao = getCol(["data ação", "data acao", "data"]);
@@ -150,21 +156,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxTalent = getCol(["talent"]);
         const idxObs = getCol(["obs", "observações", "observacoes"]);
 
-        const dataRows = jsonData.slice(1);
+        const dataRows = jsonData.slice(headerRowIndex + 1);
         
         const filterPlaceholder = (val: any) => {
           if (val === null || val === undefined) return null;
           const str = String(val).trim();
-          const placeholders = [
-            "não identificad",
-            "não cadastrado",
-            "não encontrad",
-            "Nenhum cargo",
-            "Nenhuma empresa"
-          ];
-          if (placeholders.some(p => str.toLowerCase().includes(p.toLowerCase()))) {
-            return null;
-          }
+          const placeholders = ["não identificad", "não cadastrado", "não encontrad", "Nenhum cargo", "Nenhuma empresa"];
+          if (placeholders.some(p => str.toLowerCase().includes(p.toLowerCase()))) return null;
           return str || null;
         };
 
@@ -172,41 +170,50 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           const rawReferral = idxReferral !== -1 ? filterPlaceholder(row[idxReferral]) : null;
           const rawNome = idxNome !== -1 ? filterPlaceholder(row[idxNome]) : null;
           const rawVaga = idxVaga !== -1 ? filterPlaceholder(row[idxVaga]) : null;
+          const rawEmpresa = idxEmpresa !== -1 ? filterPlaceholder(row[idxEmpresa]) : null;
           
           if (!rawVaga && !rawNome && !rawReferral) continue;
-
 
           let candidatoId: string | null = null;
           let vinculado = false;
 
-          // Priority 1: Referral ID
+          const normNomePlanilha = normalizeNameAggressive(rawNome || "");
+
+          // Step 1: Referral ID
           if (rawReferral && candidatesByReferral.has(rawReferral)) {
             candidatoId = candidatesByReferral.get(rawReferral) || null;
             vinculado = true;
           } 
-          // Priority 2: Normalized Name
-          if (!vinculado && rawNome) {
-            const normalized = normalizeName(rawNome);
-            if (candidatesByName.has(normalized)) {
-              candidatoId = candidatesByName.get(normalized) || null;
+          
+          // Step 2: Exact Normalized Name
+          if (!vinculado && normNomePlanilha) {
+            if (candidatesByName.has(normNomePlanilha)) {
+              candidatoId = candidatesByName.get(normNomePlanilha) || null;
               vinculado = true;
-            } else {
-              const firstTwoWords = normalized.split(' ').slice(0, 2).join(' ');
-              if (firstTwoWords) {
-                const match = candidatesList.find(c => c.nome_normalizado.startsWith(firstTwoWords));
-                if (match) {
-                  candidatoId = match.id;
-                  vinculado = true;
-                }
+            } 
+          }
+
+          // Step 3: Partial Match (First 2 words)
+          if (!vinculado && normNomePlanilha) {
+            const firstTwoWords = normNomePlanilha.split(' ').slice(0, 2).join(' ');
+            if (firstTwoWords.length > 5) {
+              const match = candidatesList.find(c => c.nome_normalizado.startsWith(firstTwoWords));
+              if (match) {
+                candidatoId = match.id;
+                vinculado = true;
               }
             }
           }
+
+          const suggestions = !vinculado && normNomePlanilha 
+            ? getSimilarCandidates(normNomePlanilha, candidatesList)
+            : [];
 
           allMappedData.push({
             candidato_id: candidatoId,
             candidato_nome_original: rawNome || `Ref: ${rawReferral}`,
             vaga: rawVaga || "Vaga não informada",
-            empresa: idxEmpresa !== -1 ? filterPlaceholder(row[idxEmpresa]) : "-",
+            empresa: rawEmpresa || "-",
             indicacao_contato: idxTalent !== -1 ? filterPlaceholder(row[idxTalent]) : null,
             vaga_link: idxLink !== -1 ? filterPlaceholder(row[idxLink]) : null,
             formato: null, 
@@ -214,6 +221,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             resultado: idxStatus !== -1 ? filterPlaceholder(row[idxStatus]) : null,
             jobhunter: sheetName,
             vinculado,
+            suggestions: suggestions.map(s => ({ id: s.id, nome: s.nome })),
             origem: idxOrigem !== -1 ? filterPlaceholder(row[idxOrigem]) : null,
             linkedin_candidato: idxLinkedin !== -1 ? filterPlaceholder(row[idxLinkedin]) : null,
             data_retorno: idxDataRetorno !== -1 ? parseExcelDate(row[idxDataRetorno]) : null,
@@ -221,34 +229,42 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             funil: idxFunil !== -1 ? filterPlaceholder(row[idxFunil]) : null,
             observacoes: idxObs !== -1 ? filterPlaceholder(row[idxObs]) : null,
           } as any);
-
         }
       }
 
-      setDebugLog({ processed, ignored });
+      setDebugLog({ processed: processedSheets, ignored: ignoredSheets });
       setPreviewData(allMappedData);
-      
-      const vinculadosCount = allMappedData.filter(d => d.vinculado).length;
-      const naoVinculadosCount = allMappedData.length - vinculadosCount;
-      const uniqueNaoVinculados = Array.from(new Set(
-        allMappedData.filter(d => !d.vinculado).map(d => d.candidato_nome_original)
-      )).sort();
-
-      setStats({
-        total: allMappedData.length,
-        vinculados: vinculadosCount,
-        naoVinculados: naoVinculadosCount,
-        novos: 0,
-        atualizacoes: 0
-      });
-      setNaoVinculadosNomes(uniqueNaoVinculados);
-
+      updateStats(allMappedData);
     } catch (error) {
       console.error("Error processing file:", error);
       toast.error("Erro ao processar o arquivo Excel.");
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const updateStats = (data: MappedIndication[]) => {
+    const vinculadosCount = data.filter(d => d.vinculado && !d.manual_ignore).length;
+    setStats({
+      total: data.length,
+      vinculados: vinculadosCount,
+      naoVinculados: data.length - vinculadosCount,
+      novos: 0,
+      atualizacoes: 0
+    });
+  };
+
+  const handleManualVinculation = (index: number, candidatoId: string | 'ignore') => {
+    setPreviewData(prev => {
+      const newData = [...prev];
+      if (candidatoId === 'ignore') {
+        newData[index] = { ...newData[index], vinculado: false, manual_ignore: true, candidato_id: null };
+      } else {
+        newData[index] = { ...newData[index], vinculado: true, manual_ignore: false, candidato_id: candidatoId };
+      }
+      updateStats(newData);
+      return newData;
+    });
   };
 
   const handleConfirmImport = async () => {
@@ -259,7 +275,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       let insertedCount = 0;
       let updatedCount = 0;
 
-      const toImport = previewData.filter(d => d.vinculado && d.candidato_id);
+      const toImport = previewData.filter(d => d.vinculado && d.candidato_id && !d.manual_ignore);
       
       const chunkSize = 50;
       for (let i = 0; i < toImport.length; i += chunkSize) {
@@ -287,7 +303,6 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             data_acao: item.data_acao,
             resultado: item.resultado,
             jobhunter: item.jobhunter,
-            // New fields
             origem: (item as any).origem,
             linkedin_candidato: (item as any).linkedin_candidato,
             data_retorno: (item as any).data_retorno,
@@ -325,7 +340,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[95vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Importar Indicações (Excel)</DialogTitle>
         </DialogHeader>
@@ -350,9 +365,17 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           ) : (
             <div className="space-y-6">
               <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
-                Abas processadas: {debugLog.processed.join(", ") || "Nenhuma"}
-                <br />
-                Abas ignoradas (sem coluna 'Cliente'): {debugLog.ignored.join(", ") || "Nenhuma"}
+                <div className="font-bold text-violet-700 mb-1">Abas processadas: {debugLog.processed.join(", ") || "Nenhuma"}</div>
+                {debugLog.ignored.length > 0 && (
+                  <div className="text-amber-700 mt-2">
+                    <span className="font-bold">Abas ignoradas:</span>
+                    <ul className="list-disc pl-4 mt-1">
+                      {debugLog.ignored.map((item, i) => (
+                        <li key={i}>{item.name}: {item.reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-4 gap-4">
@@ -374,44 +397,32 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                 </div>
               </div>
 
-              {naoVinculadosNomes.length > 0 && (
-                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 text-amber-800 font-semibold mb-2">
-                    <AlertCircle size={18} />
-                    <span>Clientes não encontrados na base ({naoVinculadosNomes.length})</span>
-                  </div>
-                  <div className="text-xs text-amber-700 max-h-24 overflow-y-auto grid grid-cols-3 gap-1">
-                    {naoVinculadosNomes.map((n, i) => (
-                      <div key={i} className="truncate">• {n}</div>
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-amber-600 mt-2 italic">
-                    Dica: Verifique se o nome na planilha de indicações é o mesmo cadastrado na lista de candidatos.
-                  </p>
-                </div>
-              )}
-
               <div>
-                <h3 className="text-sm font-semibold mb-2">Prévia (10 primeiras linhas)</h3>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  Prévia e Vinculação Manual
+                  <span className="text-xs font-normal text-gray-500">(Apenas vinculados serão importados)</span>
+                </h3>
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Cliente</TableHead>
+                        <TableHead className="w-12">Status</TableHead>
+                        <TableHead>Nome na Planilha</TableHead>
+                        <TableHead>Vinculação / Sugestões</TableHead>
                         <TableHead>Vaga</TableHead>
                         <TableHead>Empresa</TableHead>
                         <TableHead>Data</TableHead>
-                        <TableHead>Retorno</TableHead>
                       </TableRow>
                     </TableHeader>
 
                     <TableBody>
-                      {previewData.slice(0, 10).map((row, i) => (
-                        <TableRow key={i} className={!row.vinculado ? "bg-red-50/30" : ""}>
+                      {previewData.slice(0, 50).map((row, i) => (
+                        <TableRow key={i} className={!row.vinculado && !row.manual_ignore ? "bg-red-50/30" : row.manual_ignore ? "bg-gray-50 opacity-60" : ""}>
                           <TableCell>
                             {row.vinculado ? (
                               <CheckCircle2 size={16} className="text-green-600" />
+                            ) : row.manual_ignore ? (
+                              <EyeOff size={16} className="text-gray-400" />
                             ) : (
                               <AlertCircle size={16} className="text-red-500" />
                             )}
@@ -419,15 +430,40 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                           <TableCell className="font-medium truncate max-w-[150px]">
                             {row.candidato_nome_original}
                           </TableCell>
+                          <TableCell className="min-w-[200px]">
+                            {row.vinculado ? (
+                              <div className="text-[11px] text-green-700 font-medium flex items-center gap-1">
+                                <UserPlus size={12} /> Vinculado com sucesso
+                              </div>
+                            ) : (
+                              <Select 
+                                onValueChange={(val) => handleManualVinculation(i, val)}
+                                defaultValue={row.manual_ignore ? "ignore" : undefined}
+                              >
+                                <SelectTrigger className="h-8 text-xs border-amber-300 bg-amber-50">
+                                  <SelectValue placeholder="Selecione um candidato..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="ignore" className="text-red-600 font-medium">Ignorar (Não é candidato)</SelectItem>
+                                  {row.suggestions?.map(s => (
+                                    <SelectItem key={s.id} value={s.id}>É este: {s.nome}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.vaga}</TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.empresa}</TableCell>
                           <TableCell>{row.data_acao || "-"}</TableCell>
-                          <TableCell className="text-gray-500">{(row as any).data_retorno || "-"}</TableCell>
-
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  {previewData.length > 50 && (
+                    <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 border-t">
+                      Mostrando apenas os primeiros 50 de {previewData.length} registros.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
