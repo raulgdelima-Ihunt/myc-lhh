@@ -296,19 +296,21 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
   const handleConfirmImport = async () => {
     if (!previewData.length) return;
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       let insertedCount = 0;
       let updatedCount = 0;
 
       const toImport = previewData.filter(d => d.vinculado && d.candidato_id && !d.manual_ignore);
+      const totalItems = toImport.length;
       
-      const chunkSize = 50;
-      for (let i = 0; i < toImport.length; i += chunkSize) {
+      const chunkSize = 20;
+      for (let i = 0; i < totalItems; i += chunkSize) {
         const chunk = toImport.slice(i, i + chunkSize);
         
-        for (const item of chunk) {
-          if (!item.candidato_id) continue;
+        await Promise.all(chunk.map(async (item) => {
+          if (!item.candidato_id) return;
 
           const { data: existing } = await (supabase
             .from("indicacoes")
@@ -350,7 +352,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             if (insertError) throw insertError;
             insertedCount++;
           }
-        }
+        }));
+
+        const currentProgress = Math.min(Math.round(((i + chunk.length) / totalItems) * 100), 100);
+        setUploadProgress(currentProgress);
       }
 
       toast.success(`${insertedCount} novas indicações, ${updatedCount} atualizadas.`);
@@ -361,8 +366,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       toast.error("Erro ao importar indicações.");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
