@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthGuard } from "@/components/auth-guard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Briefcase } from "lucide-react";
 import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
 import { createCandidateAccess } from "@/lib/auth.functions";
 import { toast } from "sonner";
@@ -26,12 +26,12 @@ function DataField({ label, value, isLink }: { label: string; value?: any; isLin
           href={displayValue.startsWith('http') ? displayValue : `https://${displayValue}`} 
           target="_blank" 
           rel="noreferrer"
-          className="text-sm text-violet-600 hover:underline font-medium break-all"
+          className="text-sm text-primary hover:underline font-medium break-all"
         >
           {displayValue}
         </a>
       ) : (
-        <p className="text-sm text-gray-700 font-medium">{displayValue}</p>
+        <p className="text-sm text-[#333333] font-medium">{displayValue}</p>
       )}
     </div>
   );
@@ -45,14 +45,6 @@ function CandidatoDetail() {
 
   const { data: candidato, isLoading: isLoadingCandidato } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes } = useCandidatoIndicacoes(id);
-
-  useEffect(() => {
-    async function checkAccess() {
-      // Logic to check access if needed, currently using signUp failure as proxy
-    }
-    checkAccess();
-  }, [candidato]);
-
 
   const handleCreateAccess = async () => {
     if (!candidato?.email) return;
@@ -129,65 +121,62 @@ function CandidatoDetail() {
                       Criar Acesso ao Portal
                     </Button>
                   )}
-
-                
-                {hasAccess && !tempPassword && (
-                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-medium text-sm">
-                    <CheckCircle size={18} />
-                    Acesso já configurado
-                  </div>
-                )}
-
-                {tempPassword && (
-                  <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm animate-in zoom-in duration-300 max-w-sm">
-                    <h3 className="font-bold text-amber-900 text-sm flex items-center gap-2">
-                      <CheckCircle size={16} className="text-green-600" />
-                      Acesso criado!
-                    </h3>
-                    <p className="text-amber-800 text-xs mt-2 leading-relaxed">
-                      Envie estas credenciais ao candidato para que ele possa acessar o portal:
-                    </p>
-                    <div className="mt-3 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
-                      <p className="text-xs text-gray-600 font-medium">E-mail: <span className="text-gray-900 select-all">{candidato?.email}</span></p>
-                      <p className="text-xs text-gray-600 font-medium">Senha temporária: <span className="text-violet-700 font-bold select-all">{tempPassword}</span></p>
+                  
+                  {hasAccess && !tempPassword && (
+                    <div className="flex items-center gap-2 text-[#4CAF50] bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-bold text-sm">
+                      <CheckCircle size={18} />
+                      Acesso Configurado
                     </div>
+                  )}
+
+                  {tempPassword && (
+                    <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm animate-in zoom-in duration-300 max-w-sm">
+                      <h3 className="font-bold text-amber-900 text-sm flex items-center gap-2">
+                        <CheckCircle size={16} className="text-[#4CAF50]" />
+                        Acesso criado!
+                      </h3>
+                      <p className="text-amber-800 text-xs mt-2 leading-relaxed">
+                        Envie estas credenciais ao candidato para que ele possa acessar o portal:
+                      </p>
+                      <div className="mt-3 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
+                        <p className="text-xs text-[#666666] font-medium">E-mail: <span className="text-[#333333] select-all font-bold">{candidato?.email}</span></p>
+                        <p className="text-xs text-[#666666] font-medium">Senha temporária: <span className="text-primary font-bold select-all text-sm">{tempPassword}</span></p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 pt-6 border-t border-gray-50">
+                <section className="space-y-4">
+                  <h3 className="text-xs font-bold text-[#666666] uppercase tracking-widest border-b pb-2">Dados Pessoais</h3>
+                  <div className="space-y-3">
+                    <DataField label="LinkedIn" value={(candidato as any)?.linkedin} isLink />
+                    <DataField label="Idade" value={(candidato as any)?.idade} />
+                    <DataField label="Local" value={(candidato as any)?.local_residencia} />
+                    <DataField label="Mobilidade" value={(candidato as any)?.mobilidade} />
+                    <DataField label="Telefone" value={candidato?.telefone} />
+                    <DataField label="Relatório" value={(candidato as any)?.link_relatorio} isLink />
+                    <DataField label="Currículo" value={(candidato as any)?.cv_candidato} isLink />
                   </div>
-                )}
+                </section>
+
+                <section className="space-y-4">
+                  <h3 className="text-xs font-bold text-[#666666] uppercase tracking-widest border-b pb-2">Perfil Profissional</h3>
+                  <div className="space-y-3">
+                    <DataField label="Última Posição" value={(candidato as any)?.ultima_posicao} />
+                    <DataField label="Última Empresa" value={(candidato as any)?.ultima_empresa} />
+                    <DataField label="Último Segmento" value={(candidato as any)?.ultimo_segmento} />
+                    <DataField label="Posições Alvo" value={(candidato as any)?.posicoes_alvo} />
+                    <DataField label="Segmento Alvo" value={(candidato as any)?.segmento_alvo} />
+                    <DataField label="Empresas Alvo" value={(candidato as any)?.empresas_alvo} />
+                    <DataField label="Remuneração" value={(candidato as any)?.pretensao_salarial || candidato?.ultimo_salario} />
+                    <DataField label="Status Reunião" value={(candidato as any)?.reuniao_status} />
+                    <DataField label="Observação" value={(candidato as any)?.observacao} />
+                  </div>
+                </section>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 pt-6 border-t border-gray-50">
-              <section className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-2">Dados Pessoais</h3>
-                <div className="space-y-3">
-                  <DataField label="LinkedIn" value={(candidato as any)?.linkedin} isLink />
-                  <DataField label="Idade" value={(candidato as any)?.idade} />
-                  <DataField label="Local" value={(candidato as any)?.local_residencia} />
-                  <DataField label="Mobilidade" value={(candidato as any)?.mobilidade} />
-                  <DataField label="Telefone" value={candidato?.telefone} />
-                  <DataField label="Relatório" value={(candidato as any)?.link_relatorio} isLink />
-                  <DataField label="Currículo" value={(candidato as any)?.cv_candidato} isLink />
-                </div>
-
-              </section>
-
-              <section className="space-y-4">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-2">Perfil Profissional</h3>
-                <div className="space-y-3">
-                  <DataField label="Última Posição" value={(candidato as any)?.ultima_posicao} />
-                  <DataField label="Última Empresa" value={(candidato as any)?.ultima_empresa} />
-                  <DataField label="Último Segmento" value={(candidato as any)?.ultimo_segmento} />
-                  <DataField label="Posições Alvo" value={(candidato as any)?.posicoes_alvo} />
-                  <DataField label="Segmento Alvo" value={(candidato as any)?.segmento_alvo} />
-                  <DataField label="Empresas Alvo" value={(candidato as any)?.empresas_alvo} />
-                  <DataField label="Remuneração" value={(candidato as any)?.pretensao_salarial || candidato?.ultimo_salario} />
-                  <DataField label="Status Reunião" value={(candidato as any)?.reuniao_status} />
-                  <DataField label="Observação" value={(candidato as any)?.observacao} />
-
-                </div>
-              </section>
-            </div>
-          </div>
 
             <div className="grid grid-cols-1 gap-6">
               <Card className="border-none shadow-[0_2px_8px_rgba(0,0,0,0.08)] bg-white border-l-4 border-l-primary">
@@ -222,51 +211,56 @@ function CandidatoDetail() {
                 {indicacoes?.length || 0} REGISTROS
               </span>
             </div>
-
-          {isLoadingIndicacoes ? (
-            <div className="p-12 text-center">
-              <Loader2 className="animate-spin mx-auto text-violet-500" />
-            </div>
-          ) : (
-            indicacoes && indicacoes.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-gray-50/50 text-gray-500 text-xs font-bold uppercase tracking-wider">
-                    <tr>
-                      <th className="px-6 py-4">Vaga</th>
-                      <th className="px-6 py-4">Empresa</th>
-                      <th className="px-6 py-4 text-center">Data</th>
-                      <th className="px-6 py-4">Resultado</th>
-                      <th className="px-6 py-4">Jobhunter</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {indicacoes.map((i) => (
-                      <tr key={i.id} className="hover:bg-gray-50/30 transition-colors">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{i.vaga}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{i.empresa}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500 text-center">{i.data_acao}</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${
-                            i.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-green-700' :
-                            i.resultado?.toLowerCase().includes('cv enviado') ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            {i.resultado || 'Sem retorno'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 italic">{i.jobhunter}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            
+            {isLoadingIndicacoes ? (
+              <div className="p-12 text-center">
+                <Loader2 className="animate-spin mx-auto text-primary" />
               </div>
             ) : (
-              <div className="p-16 text-center">
-                <p className="text-gray-400 text-sm">Nenhuma indicação registrada para este candidato.</p>
-              </div>
-            )
-          )}
+              indicacoes && indicacoes.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-[#F5F5F5] text-[#666666] text-xs font-bold uppercase tracking-wider">
+                      <tr>
+                        <th className="px-6 py-4">Vaga</th>
+                        <th className="px-6 py-4">Empresa</th>
+                        <th className="px-6 py-4 text-center">Data</th>
+                        <th className="px-6 py-4">Resultado</th>
+                        <th className="px-6 py-4">Jobhunter</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {indicacoes.map((i, index) => (
+                        <tr key={i.id} className={`transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}>
+                          <td className="px-6 py-4 text-sm font-semibold text-[#333333]">{i.vaga}</td>
+                          <td className="px-6 py-4 text-sm text-[#666666]">{i.empresa}</td>
+                          <td className="px-6 py-4 text-sm text-[#666666] text-center font-medium">{i.data_acao}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${
+                              i.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-[#4CAF50]' :
+                              i.resultado?.toLowerCase().includes('cv enviado') ? 'bg-purple-100 text-primary' :
+                              'bg-gray-100 text-[#666666]'
+                            }`}>
+                              {i.resultado || 'Sem retorno'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-[#666666] italic font-medium">{i.jobhunter}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-20 text-center">
+                  <div className="w-20 h-20 bg-[#F5F5F5] rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+                    <Briefcase className="text-gray-300" size={32} />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#333333] mb-1">Nenhuma indicação registrada</h3>
+                  <p className="text-[#666666] max-w-xs mx-auto text-sm">Este candidato ainda não possui histórico de ações de mercado mapeadas.</p>
+                </div>
+              )
+            )}
+          </div>
         </div>
       </div>
     </AuthGuard>
