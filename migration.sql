@@ -1,0 +1,23 @@
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS referral_id TEXT UNIQUE;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS distribuicao TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS idade TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS linkedin TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS inicio_programa DATE;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS termino_programa DATE;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS status_programa TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS ultima_posicao TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS posicoes_alvo TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS ultimo_segmento TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS ultima_empresa TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS segmento_alvo TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS pretensao_salarial TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS mobilidade TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS local_residencia TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS empresas_alvo TEXT;
+ALTER TABLE public.candidatos ADD COLUMN IF NOT EXISTS observacao TEXT;
+
+ALTER TABLE public.indicacoes ADD COLUMN IF NOT EXISTS origem TEXT;
+ALTER TABLE public.indicacoes ADD COLUMN IF NOT EXISTS linkedin_candidato TEXT;
+ALTER TABLE public.indicacoes ADD COLUMN IF NOT EXISTS data_retorno DATE;
+ALTER TABLE public.indicacoes ADD COLUMN IF NOT EXISTS follow_up TEXT;
+ALTER TABLE public.indicacoes ADD COLUMN IF NOT EXISTS observacoes TEXT;
