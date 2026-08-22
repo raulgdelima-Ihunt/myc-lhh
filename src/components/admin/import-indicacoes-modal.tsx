@@ -62,6 +62,8 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     novos: 0,
     atualizacoes: 0
   });
+  const [showOnlyUnlinked, setShowOnlyUnlinked] = useState(false);
+
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -390,24 +392,36 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                 )}
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg border">
-                  <p className="text-xs text-gray-500 font-medium uppercase">Total de Linhas</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+              <div className="flex justify-between items-center bg-violet-50 p-4 rounded-lg border border-violet-100">
+                <div className="flex gap-8">
+                  <div>
+                    <p className="text-xs text-violet-600 font-medium uppercase">Total</p>
+                    <p className="text-2xl font-bold text-violet-900">{stats.total}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-green-600 font-medium uppercase">Vinculados</p>
+                    <p className="text-2xl font-bold text-green-900">{stats.vinculados}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-red-600 font-medium uppercase">Não Vinculados</p>
+                    <p className="text-2xl font-bold text-red-900">{stats.naoVinculados}</p>
+                  </div>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                  <p className="text-xs text-green-600 font-medium uppercase">Vinculados</p>
-                  <p className="text-2xl font-bold text-green-900">{stats.vinculados}</p>
-                </div>
-                <div className="bg-red-50 p-4 rounded-lg border border-red-100">
-                  <p className="text-xs text-red-600 font-medium uppercase">Não Vinculados</p>
-                  <p className="text-2xl font-bold text-red-900">{stats.naoVinculados}</p>
-                </div>
-                <div className="bg-violet-50 p-4 rounded-lg border border-violet-100">
-                  <p className="text-xs text-violet-600 font-medium uppercase">Prontos p/ Importar</p>
-                  <p className="text-2xl font-bold text-violet-900">{stats.vinculados}</p>
+                
+                <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-md border shadow-sm">
+                  <input
+                    type="checkbox"
+                    id="show-only-unlinked"
+                    className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                    checked={showOnlyUnlinked}
+                    onChange={(e) => setShowOnlyUnlinked(e.target.checked)}
+                  />
+                  <label htmlFor="show-only-unlinked" className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Mostrar apenas não vinculados
+                  </label>
                 </div>
               </div>
+
 
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
@@ -428,8 +442,12 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                     </TableHeader>
 
                     <TableBody>
-                      {previewData.slice(0, 50).map((row, i) => (
+                      {previewData
+                        .filter(row => !showOnlyUnlinked || (!row.vinculado && !row.manual_ignore))
+                        .slice(0, 100)
+                        .map((row, i) => (
                         <TableRow key={i} className={!row.vinculado && !row.manual_ignore ? "bg-red-50/30" : row.manual_ignore ? "bg-gray-50 opacity-60" : ""}>
+
                           <TableCell>
                             {row.vinculado ? (
                               <CheckCircle2 size={16} className="text-green-600" />
