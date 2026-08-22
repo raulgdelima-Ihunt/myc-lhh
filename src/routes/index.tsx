@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Helmet } from "react-helmet";
+
 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,7 +67,22 @@ function Index() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <>
+      <Helmet>
+        <title>Portal MyCareer by LHH</title>
+        <meta name="description" content="Acompanhe suas indicações de mercado em tempo real. Acesso exclusivo para clientes LHH." />
+        <meta property="og:title" content="Portal MyCareer by LHH" />
+        <meta property="og:description" content="Acompanhe suas indicações de mercado em tempo real." />
+        <meta property="og:image" content="/logo.svg" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://myc-lhh.lovable.app" />
+        <meta property="og:site_name" content="MyCareer by LHH" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Portal MyCareer by LHH" />
+        <meta name="twitter:description" content="Acompanhe suas indicações de mercado em tempo real." />
+        <meta name="twitter:image" content="/logo.svg" />
+      </Helmet>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100">
         <div className="mb-8 text-center">
           <div className="mb-6 flex flex-col items-center">
@@ -137,6 +154,6 @@ function Index() {
           <p className="mt-2 text-xs">© 2026 LHH Recruitment Portal</p>
         </div>
       </div>
-    </div>
+    </>
   );
 }
