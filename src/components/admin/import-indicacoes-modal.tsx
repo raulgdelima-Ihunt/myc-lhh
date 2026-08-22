@@ -102,11 +102,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       const ignored: string[] = [];
       const allMappedData: MappedIndication[] = [];
 
-      const { data: candidates } = await supabase
+      const { data: candidates } = await (supabase
         .from("candidatos")
-        .select("id, nome_normalizado, referral_id");
+        .select("id, nome_normalizado, referral_id") as any);
       
-      const candidatesList = candidates || [];
+      const candidatesList = (candidates || []) as any[];
       const candidatesByName = new Map(candidatesList.map(c => [c.nome_normalizado, c.id]));
       const candidatesByReferral = new Map(
         candidatesList.filter(c => c.referral_id).map(c => [String(c.referral_id).trim(), c.id])
@@ -250,9 +250,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         for (const item of chunk) {
           if (!item.candidato_id) continue;
 
-          const { data: existing } = await supabase
+          const { data: existing } = await (supabase
             .from("indicacoes")
-            .select("id")
+            .select("id") as any)
             .eq("candidato_id", item.candidato_id)
             .eq("vaga", item.vaga)
             .eq("empresa", item.empresa)
@@ -268,20 +268,26 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             formato: item.formato,
             data_acao: item.data_acao,
             resultado: item.resultado,
-            jobhunter: item.jobhunter
+            jobhunter: item.jobhunter,
+            // New fields
+            origem: (item as any).origem,
+            linkedin_candidato: (item as any).linkedin_candidato,
+            data_retorno: (item as any).data_retorno,
+            follow_up: (item as any).follow_up,
+            observacoes: (item as any).observacoes,
           };
 
           if (existing) {
-            const { error: updateError } = await supabase
+            const { error: updateError } = await (supabase
               .from("indicacoes")
-              .update(dataToUpsert)
+              .update(dataToUpsert as any) as any)
               .eq("id", existing.id);
             if (updateError) throw updateError;
             updatedCount++;
           } else {
-            const { error: insertError } = await supabase
+            const { error: insertError } = await (supabase
               .from("indicacoes")
-              .insert(dataToUpsert);
+              .insert(dataToUpsert as any) as any);
             if (insertError) throw insertError;
             insertedCount++;
           }

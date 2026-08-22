@@ -69,51 +69,79 @@ function CandidatoDetail() {
         </Button>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-start md:col-span-2">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{candidato?.nome}</h1>
-              <p className="text-gray-500">{candidato?.email || "E-mail não informado"}</p>
-              <div className="flex gap-2 mt-2">
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{candidato?.area}</span>
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{candidato?.nivel_cargo}</span>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 md:col-span-2 space-y-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{candidato?.nome}</h1>
+                <p className="text-gray-500">{candidato?.email || "E-mail não informado"}</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{(candidato as any)?.area}</span>
+                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{(candidato as any)?.nivel_cargo}</span>
+                  {(candidato as any)?.referral_id && (
+                    <span className="text-xs bg-violet-50 text-violet-600 px-2 py-1 rounded font-medium border border-violet-100">
+                      REF: {(candidato as any).referral_id}
+                    </span>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-gray-400 mt-4 font-medium uppercase tracking-wider">Consultor Responsável</p>
-              <p className="text-sm text-gray-700">{candidato?.consultor_responsavel || "-"}</p>
+
+              <div className="flex flex-col items-end gap-3">
+                {candidato?.email && !hasAccess && !tempPassword && (
+                  <Button onClick={handleCreateAccess} disabled={isCreating} className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-all active:scale-95">
+                    {isCreating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
+                    Criar acesso
+                  </Button>
+                )}
+                
+                {hasAccess && !tempPassword && (
+                  <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-medium text-sm">
+                    <CheckCircle size={18} />
+                    Acesso já configurado
+                  </div>
+                )}
+
+                {tempPassword && (
+                  <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm animate-in zoom-in duration-300 max-w-sm">
+                    <h3 className="font-bold text-amber-900 text-sm flex items-center gap-2">
+                      <CheckCircle size={16} className="text-green-600" />
+                      Acesso criado!
+                    </h3>
+                    <p className="text-amber-800 text-xs mt-2 leading-relaxed">
+                      Envie estas credenciais ao candidato para que ele possa acessar o portal:
+                    </p>
+                    <div className="mt-3 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
+                      <p className="text-xs text-gray-600 font-medium">E-mail: <span className="text-gray-900 select-all">{candidato?.email}</span></p>
+                      <p className="text-xs text-gray-600 font-medium">Senha temporária: <span className="text-violet-700 font-bold select-all">{tempPassword}</span></p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex flex-col items-end gap-3">
-              {candidato?.email && !hasAccess && !tempPassword && (
-                <Button onClick={handleCreateAccess} disabled={isCreating} className="bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition-all active:scale-95">
-                  {isCreating ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-                  Criar acesso
-                </Button>
-              )}
-              
-              {hasAccess && !tempPassword && (
-                <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-medium text-sm">
-                  <CheckCircle size={18} />
-                  Acesso já configurado
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 pt-6 border-t border-gray-50">
+              <section className="space-y-4">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-2">Dados Pessoais</h3>
+                <div className="space-y-3">
+                  <DataField label="LinkedIn" value={(candidato as any)?.linkedin} isLink />
+                  <DataField label="Idade" value={(candidato as any)?.idade} />
+                  <DataField label="Local" value={(candidato as any)?.local_residencia} />
+                  <DataField label="Mobilidade" value={(candidato as any)?.mobilidade} />
+                  <DataField label="Telefone" value={candidato?.telefone} />
                 </div>
-              )}
+              </section>
 
-              {tempPassword && (
-                <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm animate-in zoom-in duration-300 max-w-sm">
-                  <h3 className="font-bold text-amber-900 text-sm flex items-center gap-2">
-                    <CheckCircle size={16} className="text-green-600" />
-                    Acesso criado!
-                  </h3>
-                  <p className="text-amber-800 text-xs mt-2 leading-relaxed">
-                    Envie estas credenciais ao candidato para que ele possa acessar o portal:
-                  </p>
-                  <div className="mt-3 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
-                    <p className="text-xs text-gray-600 font-medium">E-mail: <span className="text-gray-900 select-all">{candidato?.email}</span></p>
-                    <p className="text-xs text-gray-600 font-medium">Senha temporária: <span className="text-violet-700 font-bold select-all">{tempPassword}</span></p>
-                  </div>
-                  <p className="text-[10px] text-amber-700 mt-3 italic">
-                    * Recomende que o candidato altere a senha após o primeiro acesso.
-                  </p>
+              <section className="space-y-4">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b pb-2">Perfil Profissional</h3>
+                <div className="space-y-3">
+                  <DataField label="Última Posição" value={(candidato as any)?.ultima_posicao} />
+                  <DataField label="Última Empresa" value={(candidato as any)?.ultima_empresa} />
+                  <DataField label="Último Segmento" value={(candidato as any)?.ultimo_segmento} />
+                  <DataField label="Posições Alvo" value={(candidato as any)?.posicoes_alvo} />
+                  <DataField label="Segmento Alvo" value={(candidato as any)?.segmento_alvo} />
+                  <DataField label="Empresas Alvo" value={(candidato as any)?.empresas_alvo} />
+                  <DataField label="Remuneração" value={(candidato as any)?.pretensao_salarial || candidato?.ultimo_salario} />
                 </div>
-              )}
+              </section>
             </div>
           </div>
 
