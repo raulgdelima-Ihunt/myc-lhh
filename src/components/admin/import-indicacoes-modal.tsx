@@ -256,18 +256,27 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
   };
 
   const handleManualVinculation = (index: number, candidatoId: string | 'ignore') => {
+    // Correctly calculate the index in the full array even when filtered
+    const visibleData = previewData.filter(row => !showOnlyUnlinked || (!row.vinculado && !row.manual_ignore));
+    const targetItem = visibleData[index];
+    if (!targetItem) return;
+
+    // Find the original index in previewData
+    const originalIndex = previewData.findIndex(item => item === targetItem);
+    if (originalIndex === -1) return;
+
     setPreviewData(prev => {
       const newData = [...prev];
-      const item = newData[index];
+      const item = newData[originalIndex];
       if (candidatoId === 'ignore') {
-        newData[index] = { 
+        newData[originalIndex] = { 
           ...item, 
           vinculado: false, 
           manual_ignore: true, 
           candidato_id: null 
         } as MappedIndication;
       } else {
-        newData[index] = { 
+        newData[originalIndex] = { 
           ...item, 
           vinculado: true, 
           manual_ignore: false, 
@@ -278,6 +287,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       return newData;
     });
   };
+
 
 
 
