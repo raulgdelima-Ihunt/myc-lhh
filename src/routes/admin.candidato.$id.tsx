@@ -151,7 +151,10 @@ function CandidatoDetail() {
                   <DataField label="Local" value={(candidato as any)?.local_residencia} />
                   <DataField label="Mobilidade" value={(candidato as any)?.mobilidade} />
                   <DataField label="Telefone" value={candidato?.telefone} />
+                  <DataField label="Relatório" value={(candidato as any)?.link_relatorio} isLink />
+                  <DataField label="Currículo" value={(candidato as any)?.cv_candidato} isLink />
                 </div>
+
               </section>
 
               <section className="space-y-4">
@@ -164,6 +167,9 @@ function CandidatoDetail() {
                   <DataField label="Segmento Alvo" value={(candidato as any)?.segmento_alvo} />
                   <DataField label="Empresas Alvo" value={(candidato as any)?.empresas_alvo} />
                   <DataField label="Remuneração" value={(candidato as any)?.pretensao_salarial || candidato?.ultimo_salario} />
+                  <DataField label="Status Reunião" value={(candidato as any)?.reuniao_status} />
+                  <DataField label="Observação" value={(candidato as any)?.observacao} />
+
                 </div>
               </section>
             </div>
