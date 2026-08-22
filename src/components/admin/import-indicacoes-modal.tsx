@@ -537,20 +537,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           <Button variant="outline" onClick={onClose} disabled={isUploading}>
             Cancelar
           </Button>
-          {file && !isProcessing && (
+          {file && !isProcessing && !isUploading && (
             <Button 
               onClick={handleConfirmImport} 
               disabled={isUploading || stats.vinculados === 0}
               className="bg-violet-600 hover:bg-violet-700"
             >
-              {isUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importando...
-                </>
-              ) : (
-                `Confirmar Importação (${stats.vinculados})`
-              )}
+              Confirmar Importação ({stats.vinculados})
             </Button>
           )}
         </DialogFooter>
@@ -558,4 +551,5 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     </Dialog>
   );
 }
+
 
