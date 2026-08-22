@@ -282,9 +282,9 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           let existing = null;
 
           if (candidate.referral_id) {
-            const { data } = await supabase
+            const { data } = await (supabase
               .from("candidatos")
-              .select("id")
+              .select("id") as any)
               .eq("referral_id", candidate.referral_id)
               .maybeSingle();
             existing = data;
@@ -300,16 +300,16 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           }
 
           if (existing) {
-            const { error: updateError } = await supabase
+            const { error: updateError } = await (supabase
               .from("candidatos")
-              .update(candidate)
+              .update(candidate as any) as any)
               .eq("id", existing.id);
             if (updateError) throw updateError;
             updatedCount++;
           } else {
-            const { error: insertError } = await supabase
+            const { error: insertError } = await (supabase
               .from("candidatos")
-              .insert(candidate);
+              .insert(candidate as any) as any);
             if (insertError) throw insertError;
             insertedCount++;
           }
