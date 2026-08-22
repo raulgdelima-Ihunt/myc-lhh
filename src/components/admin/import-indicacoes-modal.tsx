@@ -67,6 +67,8 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
 
   const parseExcelDate = (val: any) => {
     if (!val) return null;
@@ -294,19 +296,21 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
   const handleConfirmImport = async () => {
     if (!previewData.length) return;
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       let insertedCount = 0;
       let updatedCount = 0;
 
       const toImport = previewData.filter(d => d.vinculado && d.candidato_id && !d.manual_ignore);
+      const totalItems = toImport.length;
       
-      const chunkSize = 50;
-      for (let i = 0; i < toImport.length; i += chunkSize) {
+      const chunkSize = 20;
+      for (let i = 0; i < totalItems; i += chunkSize) {
         const chunk = toImport.slice(i, i + chunkSize);
         
-        for (const item of chunk) {
-          if (!item.candidato_id) continue;
+        await Promise.all(chunk.map(async (item) => {
+          if (!item.candidato_id) return;
 
           const { data: existing } = await (supabase
             .from("indicacoes")
@@ -348,7 +352,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             if (insertError) throw insertError;
             insertedCount++;
           }
-        }
+        }));
+
+        const currentProgress = Math.min(Math.round(((i + chunk.length) / totalItems) * 100), 100);
+        setUploadProgress(currentProgress);
       }
 
       toast.success(`${insertedCount} novas indicações, ${updatedCount} atualizadas.`);
@@ -359,8 +366,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       toast.error("Erro ao importar indicações.");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -386,7 +395,19 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
               <Loader2 className="h-8 w-8 animate-spin text-violet-600 mb-4" />
               <p>Processando abas e vinculando clientes...</p>
             </div>
+          ) : isUploading ? (
+            <div className="flex flex-col items-center justify-center p-12 space-y-4">
+              <div className="w-full max-w-md bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div 
+                  className="bg-violet-600 h-full transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <p className="text-lg font-medium text-violet-900">{uploadProgress}% completo</p>
+              <p className="text-sm text-gray-500 italic">Gravando indicações vinculadas no banco de dados...</p>
+            </div>
           ) : (
+
             <div className="space-y-6">
               <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
                 <div className="font-bold text-violet-700 mb-1">Abas processadas: {debugLog.processed.join(", ") || "Nenhuma"}</div>
@@ -516,20 +537,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           <Button variant="outline" onClick={onClose} disabled={isUploading}>
             Cancelar
           </Button>
-          {file && !isProcessing && (
+          {file && !isProcessing && !isUploading && (
             <Button 
               onClick={handleConfirmImport} 
               disabled={isUploading || stats.vinculados === 0}
               className="bg-violet-600 hover:bg-violet-700"
             >
-              {isUploading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importando...
-                </>
-              ) : (
-                `Confirmar Importação (${stats.vinculados})`
-              )}
+              Confirmar Importação ({stats.vinculados})
             </Button>
           )}
         </DialogFooter>
@@ -537,4 +551,5 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     </Dialog>
   );
 }
+
 
