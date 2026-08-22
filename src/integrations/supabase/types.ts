@@ -19,12 +19,14 @@ export type Database = {
           area: string | null
           consultor_responsavel: string | null
           created_at: string | null
+          cv_candidato: string | null
           distribuicao: string | null
           email: string | null
           empresas_alvo: string | null
           id: string
           idade: string | null
           inicio_programa: string | null
+          link_relatorio: string | null
           linkedin: string | null
           local_residencia: string | null
           mobilidade: string | null
@@ -36,6 +38,7 @@ export type Database = {
           posicoes_alvo: string | null
           pretensao_salarial: string | null
           referral_id: string | null
+          reuniao_status: string | null
           segmento_alvo: string | null
           status: string | null
           status_programa: string | null
@@ -50,12 +53,14 @@ export type Database = {
           area?: string | null
           consultor_responsavel?: string | null
           created_at?: string | null
+          cv_candidato?: string | null
           distribuicao?: string | null
           email?: string | null
           empresas_alvo?: string | null
           id?: string
           idade?: string | null
           inicio_programa?: string | null
+          link_relatorio?: string | null
           linkedin?: string | null
           local_residencia?: string | null
           mobilidade?: string | null
@@ -67,6 +72,7 @@ export type Database = {
           posicoes_alvo?: string | null
           pretensao_salarial?: string | null
           referral_id?: string | null
+          reuniao_status?: string | null
           segmento_alvo?: string | null
           status?: string | null
           status_programa?: string | null
@@ -81,12 +87,14 @@ export type Database = {
           area?: string | null
           consultor_responsavel?: string | null
           created_at?: string | null
+          cv_candidato?: string | null
           distribuicao?: string | null
           email?: string | null
           empresas_alvo?: string | null
           id?: string
           idade?: string | null
           inicio_programa?: string | null
+          link_relatorio?: string | null
           linkedin?: string | null
           local_residencia?: string | null
           mobilidade?: string | null
@@ -98,6 +106,7 @@ export type Database = {
           posicoes_alvo?: string | null
           pretensao_salarial?: string | null
           referral_id?: string | null
+          reuniao_status?: string | null
           segmento_alvo?: string | null
           status?: string | null
           status_programa?: string | null
