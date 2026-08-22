@@ -17,9 +17,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
+
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -42,6 +45,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [clearDatabase, setClearDatabase] = useState(true);
+
 
   const normalizeName = (name: string) => {
     if (!name) return "";
@@ -306,62 +311,60 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
     setIsUploading(true);
 
     try {
-      let insertedCount = 0;
-      let updatedCount = 0;
+      if (clearDatabase) {
+        // Delete candidates that are not users (to avoid breaking auth)
+        // or just clear all if the admin understands the consequence.
+        // For safety in this specific flow, we delete all candidates.
+        const { error: deleteError } = await supabase
+          .from("candidatos")
+          .delete()
+          .neq("status", "non_existent_status"); // Delete all rows
+        
+        if (deleteError) throw deleteError;
+        toast.info("Base de dados limpa com sucesso.");
+      }
 
       // Process in chunks to avoid timeout
       const chunkSize = 50;
       for (let i = 0; i < previewData.length; i += chunkSize) {
         const chunk = previewData.slice(i, i + chunkSize);
         
-        for (const candidate of chunk) {
-          let existing = null;
+        // Separate those with referral_id and those without
+        const withReferral = chunk.filter(c => c.referral_id);
+        const withoutReferral = chunk.filter(c => !c.referral_id && c.nome_normalizado);
 
-          if (candidate.referral_id) {
-            const { data } = await (supabase
-              .from("candidatos")
-              .select("id") as any)
-              .eq("referral_id", candidate.referral_id)
-              .maybeSingle();
-            existing = data;
-          }
+        if (withReferral.length > 0) {
+          const { error } = await supabase
+            .from("candidatos")
+            .upsert(withReferral as any, { 
+              onConflict: 'referral_id',
+              ignoreDuplicates: false 
+            });
+          if (error) throw error;
+        }
 
-          if (!existing) {
-            const { data } = await supabase
-              .from("candidatos")
-              .select("id")
-              .eq("nome_normalizado", candidate.nome_normalizado)
-              .maybeSingle();
-            existing = data;
-          }
-
-          if (existing) {
-            const { error: updateError } = await (supabase
-              .from("candidatos")
-              .update(candidate as any) as any)
-              .eq("id", existing.id);
-            if (updateError) throw updateError;
-            updatedCount++;
-          } else {
-            const { error: insertError } = await (supabase
-              .from("candidatos")
-              .insert(candidate as any) as any);
-            if (insertError) throw insertError;
-            insertedCount++;
-          }
+        if (withoutReferral.length > 0) {
+          const { error } = await supabase
+            .from("candidatos")
+            .upsert(withoutReferral as any, { 
+              onConflict: 'nome_normalizado',
+              ignoreDuplicates: false 
+            });
+          if (error) throw error;
         }
       }
 
-      toast.success(`${insertedCount} inseridos, ${updatedCount} atualizados.`);
+      toast.success(`Importação concluída: ${previewData.length} candidatos processados.`);
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error importing:", error);
-      toast.error("Erro ao importar candidatos.");
+      toast.error(`Erro ao importar: ${error.message || "Verifique o console para detalhes"}`);
     } finally {
       setIsUploading(false);
     }
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -410,7 +413,22 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                 </div>
               </div>
 
+              <div className="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <Checkbox 
+                  id="clear-db" 
+                  checked={clearDatabase} 
+                  onCheckedChange={(checked) => setClearDatabase(checked === true)}
+                />
+                <Label 
+                  htmlFor="clear-db" 
+                  className="text-sm font-medium text-slate-700 cursor-pointer"
+                >
+                  Limpar base de candidatos antes de importar (Recomendado)
+                </Label>
+              </div>
+
               <div>
+
                 <h3 className="text-sm font-semibold mb-2">Prévia (10 primeiras linhas)</h3>
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
