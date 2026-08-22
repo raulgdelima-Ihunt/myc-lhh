@@ -130,7 +130,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       }
 
       if (foundHeaderRow === -1) {
-        const ws = targetSheetName ? workbook.Sheets[targetSheetName] : workbook.Sheets[workbook.SheetNames[0]];
+        const firstSheetName = workbook.SheetNames[0];
+        const ws = targetSheetName ? workbook.Sheets[targetSheetName] : (firstSheetName ? workbook.Sheets[firstSheetName] : null);
         finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
         foundHeaderRow = 0;
       }
