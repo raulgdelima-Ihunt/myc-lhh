@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertCircle, CheckCircle2, UserPlus } from "lucide-react";
+import { Loader2, Upload, AlertCircle, CheckCircle2, UserPlus, EyeOff } from "lucide-react";
 import { normalizeNameAggressive, getSimilarCandidates } from "@/lib/string-utils";
 
 interface ImportModalProps {
@@ -131,7 +131,6 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxVaga = getCol(["vaga", "posição", "posicao", "vagas"]);
         const idxEmpresa = getCol(["empresa", "consultoria", "empresa/consultoria"]);
         
-        // CORRIGIR: Process process ONLY sheets with mandatory columns
         if (idxAcao === -1 || idxVaga === -1 || idxEmpresa === -1) {
           const missing = [];
           if (idxAcao === -1) missing.push("Ação/Indicação");
@@ -258,9 +257,19 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     setPreviewData(prev => {
       const newData = [...prev];
       if (candidatoId === 'ignore') {
-        newData[index] = { ...newData[index], vinculado: false, manual_ignore: true, candidato_id: null };
+        newData[index] = { 
+          ...newData[index], 
+          vinculado: false, 
+          manual_ignore: true, 
+          candidato_id: null 
+        };
       } else {
-        newData[index] = { ...newData[index], vinculado: true, manual_ignore: false, candidato_id: candidatoId };
+        newData[index] = { 
+          ...newData[index], 
+          vinculado: true, 
+          manual_ignore: false, 
+          candidato_id: candidatoId 
+        };
       }
       updateStats(newData);
       return newData;
@@ -438,7 +447,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                             ) : (
                               <Select 
                                 onValueChange={(val) => handleManualVinculation(i, val)}
-                                defaultValue={row.manual_ignore ? "ignore" : undefined}
+                                value={row.manual_ignore ? "ignore" : undefined}
                               >
                                 <SelectTrigger className="h-8 text-xs border-amber-300 bg-amber-50">
                                   <SelectValue placeholder="Selecione um candidato..." />
@@ -495,3 +504,4 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     </Dialog>
   );
 }
+
