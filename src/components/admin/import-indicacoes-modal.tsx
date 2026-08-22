@@ -104,10 +104,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
       const { data: candidates } = await supabase
         .from("candidatos")
-        .select("id, nome_normalizado");
+        .select("id, nome_normalizado, referral_id");
       
       const candidatesList = candidates || [];
-      const candidatesMap = new Map(candidatesList.map(c => [c.nome_normalizado, c.id]));
+      const candidatesByName = new Map(candidatesList.map(c => [c.nome_normalizado, c.id]));
+      const candidatesByReferral = new Map(
+        candidatesList.filter(c => c.referral_id).map(c => [String(c.referral_id).trim(), c.id])
+      );
 
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
@@ -120,80 +123,103 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         }
 
         const headerRow = (jsonData[0] || []).map(h => String(h || "").trim().toLowerCase());
-        const idxCliente = headerRow.indexOf("cliente");
+        const getCol = (patterns: string[]) => headerRow.findIndex(h => patterns.some(p => h.includes(p.toLowerCase())));
         
-        if (idxCliente === -1) {
+        const idxReferral = getCol(["referral"]);
+        const idxNome = getCol(["nome", "cliente"]);
+        
+        if (idxNome === -1 && idxReferral === -1) {
           ignored.push(sheetName);
           continue;
         }
 
         processed.push(sheetName);
-
-        const getCol = (name: string) => headerRow.findIndex(h => h.includes(name.toLowerCase()));
         
-        const idxVaga = getCol("vaga");
-        const idxEmpresa = getCol("empresa");
-        const idxIndicacao = getCol("indicação");
-        const idxLink = getCol("link");
-        const idxFormato = getCol("formato");
-        const idxData = getCol("data");
-        const idxResultado = getCol("resultado");
+        const idxAcao = getCol(["ação", "acao"]);
+        const idxVaga = getCol(["vaga", "posição", "posicao"]);
+        const idxOrigem = getCol(["origem"]);
+        const idxEmpresa = getCol(["empresa", "consultoria"]);
+        const idxLink = getCol(["link"]);
+        const idxLinkedin = getCol(["linkedin"]);
+        const idxDataAcao = getCol(["data ação", "data acao", "data"]);
+        const idxDataRetorno = getCol(["data retorno"]);
+        const idxFollowUp = getCol(["follow up"]);
+        const idxFunil = getCol(["funil"]);
+        const idxStatus = getCol(["status", "resultado"]);
+        const idxTalent = getCol(["talent"]);
+        const idxObs = getCol(["obs", "observações", "observacoes"]);
 
         const dataRows = jsonData.slice(1);
         
         for (const row of dataRows) {
+          const rawReferral = idxReferral !== -1 ? String(row[idxReferral] || "").trim() : "";
+          const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
           const rawVaga = idxVaga !== -1 ? String(row[idxVaga] || "").trim() : "";
-          if (!rawVaga) continue;
-
-          const rawCliente = String(row[idxCliente] || "").trim();
-          const normalizedCliente = normalizeName(rawCliente);
           
+          if (!rawVaga && !rawNome && !rawReferral) continue;
+
           let candidatoId: string | null = null;
           let vinculado = false;
 
-          if (candidatesMap.has(normalizedCliente)) {
-            candidatoId = candidatesMap.get(normalizedCliente) || null;
+          // Priority 1: Referral ID
+          if (rawReferral && candidatesByReferral.has(rawReferral)) {
+            candidatoId = candidatesByReferral.get(rawReferral) || null;
             vinculado = true;
-          } else {
-            const firstTwoWords = normalizedCliente.split(' ').slice(0, 2).join(' ');
-            if (firstTwoWords) {
-              const match = candidatesList.find(c => c.nome_normalizado.startsWith(firstTwoWords));
-              if (match) {
-                candidatoId = match.id;
-                vinculado = true;
+          } 
+          // Priority 2: Normalized Name
+          if (!vinculado && rawNome) {
+            const normalized = normalizeName(rawNome);
+            if (candidatesByName.has(normalized)) {
+              candidatoId = candidatesByName.get(normalized) || null;
+              vinculado = true;
+            } else {
+              const firstTwoWords = normalized.split(' ').slice(0, 2).join(' ');
+              if (firstTwoWords) {
+                const match = candidatesList.find(c => c.nome_normalizado.startsWith(firstTwoWords));
+                if (match) {
+                  candidatoId = match.id;
+                  vinculado = true;
+                }
               }
             }
           }
 
           allMappedData.push({
             candidato_id: candidatoId,
-            candidato_nome_original: rawCliente,
-            vaga: rawVaga,
+            candidato_nome_original: rawNome || `Ref: ${rawReferral}`,
+            vaga: rawVaga || "Vaga não informada",
             empresa: idxEmpresa !== -1 ? String(row[idxEmpresa] || "").trim() : "-",
-            indicacao_contato: idxIndicacao !== -1 && row[idxIndicacao] ? String(row[idxIndicacao]).trim() : null,
-            vaga_link: idxLink !== -1 && row[idxLink] ? String(row[idxLink]).trim() : null,
-            formato: idxFormato !== -1 && row[idxFormato] ? String(row[idxFormato]).trim() : null,
-            data_acao: idxData !== -1 ? (parseExcelDate(row[idxData]) as string | null) : null,
-            resultado: idxResultado !== -1 && row[idxResultado] ? String(row[idxResultado]).trim() : null,
+            indicacao_contato: idxTalent !== -1 ? String(row[idxTalent] || "").trim() : null,
+            vaga_link: idxLink !== -1 ? String(row[idxLink] || "").trim() : null,
+            formato: null, // Removed in new format but kept for type compat
+            data_acao: idxDataAcao !== -1 ? (parseExcelDate(row[idxDataAcao]) as string | null) : null,
+            resultado: idxStatus !== -1 ? String(row[idxStatus] || "").trim() : null,
             jobhunter: sheetName,
-            vinculado
-          });
+            vinculado,
+            // Additional fields for database (extended via type cast in handleConfirmImport)
+            origem: idxOrigem !== -1 ? String(row[idxOrigem] || "").trim() : null,
+            linkedin_candidato: idxLinkedin !== -1 ? String(row[idxLinkedin] || "").trim() : null,
+            data_retorno: idxDataRetorno !== -1 ? parseExcelDate(row[idxDataRetorno]) : null,
+            follow_up: idxFollowUp !== -1 ? String(row[idxFollowUp] || "").trim() : null,
+            funil: idxFunil !== -1 ? String(row[idxFunil] || "").trim() : null,
+            observacoes: idxObs !== -1 ? String(row[idxObs] || "").trim() : null,
+          } as any);
         }
       }
 
       setDebugLog({ processed, ignored });
       setPreviewData(allMappedData);
       
-      const vinculados = allMappedData.filter(d => d.vinculado).length;
-      const naoVinculados = allMappedData.length - vinculados;
+      const vinculadosCount = allMappedData.filter(d => d.vinculado).length;
+      const naoVinculadosCount = allMappedData.length - vinculadosCount;
       const uniqueNaoVinculados = Array.from(new Set(
         allMappedData.filter(d => !d.vinculado).map(d => d.candidato_nome_original)
       )).sort();
 
       setStats({
         total: allMappedData.length,
-        vinculados,
-        naoVinculados,
+        vinculados: vinculadosCount,
+        naoVinculados: naoVinculadosCount,
         novos: 0,
         atualizacoes: 0
       });
