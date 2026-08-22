@@ -126,12 +126,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const getCol = (patterns: string[]) => headerRow.findIndex(h => patterns.some(p => h.includes(p.toLowerCase())));
         
         const idxReferral = getCol(["referral"]);
-        const idxNome = getCol(["nome", "cliente"]);
+        const idxNome = getCol(["nome", "cliente", "assessorado"]);
         
         if (idxNome === -1 && idxReferral === -1) {
           ignored.push(sheetName);
           continue;
         }
+
 
         processed.push(sheetName);
         
@@ -151,12 +152,29 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
         const dataRows = jsonData.slice(1);
         
+        const filterPlaceholder = (val: any) => {
+          if (val === null || val === undefined) return null;
+          const str = String(val).trim();
+          const placeholders = [
+            "não identificad",
+            "não cadastrado",
+            "não encontrad",
+            "Nenhum cargo",
+            "Nenhuma empresa"
+          ];
+          if (placeholders.some(p => str.toLowerCase().includes(p.toLowerCase()))) {
+            return null;
+          }
+          return str || null;
+        };
+
         for (const row of dataRows) {
-          const rawReferral = idxReferral !== -1 ? String(row[idxReferral] || "").trim() : "";
-          const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
-          const rawVaga = idxVaga !== -1 ? String(row[idxVaga] || "").trim() : "";
+          const rawReferral = idxReferral !== -1 ? filterPlaceholder(row[idxReferral]) : null;
+          const rawNome = idxNome !== -1 ? filterPlaceholder(row[idxNome]) : null;
+          const rawVaga = idxVaga !== -1 ? filterPlaceholder(row[idxVaga]) : null;
           
           if (!rawVaga && !rawNome && !rawReferral) continue;
+
 
           let candidatoId: string | null = null;
           let vinculado = false;
@@ -188,22 +206,22 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             candidato_id: candidatoId,
             candidato_nome_original: rawNome || `Ref: ${rawReferral}`,
             vaga: rawVaga || "Vaga não informada",
-            empresa: idxEmpresa !== -1 ? String(row[idxEmpresa] || "").trim() : "-",
-            indicacao_contato: idxTalent !== -1 ? String(row[idxTalent] || "").trim() : null,
-            vaga_link: idxLink !== -1 ? String(row[idxLink] || "").trim() : null,
-            formato: null, // Removed in new format but kept for type compat
+            empresa: idxEmpresa !== -1 ? filterPlaceholder(row[idxEmpresa]) : "-",
+            indicacao_contato: idxTalent !== -1 ? filterPlaceholder(row[idxTalent]) : null,
+            vaga_link: idxLink !== -1 ? filterPlaceholder(row[idxLink]) : null,
+            formato: null, 
             data_acao: idxDataAcao !== -1 ? (parseExcelDate(row[idxDataAcao]) as string | null) : null,
-            resultado: idxStatus !== -1 ? String(row[idxStatus] || "").trim() : null,
+            resultado: idxStatus !== -1 ? filterPlaceholder(row[idxStatus]) : null,
             jobhunter: sheetName,
             vinculado,
-            // Additional fields for database (extended via type cast in handleConfirmImport)
-            origem: idxOrigem !== -1 ? String(row[idxOrigem] || "").trim() : null,
-            linkedin_candidato: idxLinkedin !== -1 ? String(row[idxLinkedin] || "").trim() : null,
+            origem: idxOrigem !== -1 ? filterPlaceholder(row[idxOrigem]) : null,
+            linkedin_candidato: idxLinkedin !== -1 ? filterPlaceholder(row[idxLinkedin]) : null,
             data_retorno: idxDataRetorno !== -1 ? parseExcelDate(row[idxDataRetorno]) : null,
-            follow_up: idxFollowUp !== -1 ? String(row[idxFollowUp] || "").trim() : null,
-            funil: idxFunil !== -1 ? String(row[idxFunil] || "").trim() : null,
-            observacoes: idxObs !== -1 ? String(row[idxObs] || "").trim() : null,
+            follow_up: idxFollowUp !== -1 ? filterPlaceholder(row[idxFollowUp]) : null,
+            funil: idxFunil !== -1 ? filterPlaceholder(row[idxFunil]) : null,
+            observacoes: idxObs !== -1 ? filterPlaceholder(row[idxObs]) : null,
           } as any);
+
         }
       }
 
@@ -384,9 +402,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                         <TableHead>Vaga</TableHead>
                         <TableHead>Empresa</TableHead>
                         <TableHead>Data</TableHead>
-                        <TableHead>Jobhunter</TableHead>
+                        <TableHead>Retorno</TableHead>
                       </TableRow>
                     </TableHeader>
+
                     <TableBody>
                       {previewData.slice(0, 10).map((row, i) => (
                         <TableRow key={i} className={!row.vinculado ? "bg-red-50/30" : ""}>
@@ -403,7 +422,8 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                           <TableCell className="truncate max-w-[150px]">{row.vaga}</TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.empresa}</TableCell>
                           <TableCell>{row.data_acao || "-"}</TableCell>
-                          <TableCell className="text-gray-500">{row.jobhunter}</TableCell>
+                          <TableCell className="text-gray-500">{(row as any).data_retorno || "-"}</TableCell>
+
                         </TableRow>
                       ))}
                     </TableBody>

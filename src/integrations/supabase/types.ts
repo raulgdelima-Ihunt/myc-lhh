@@ -19,43 +19,103 @@ export type Database = {
           area: string | null
           consultor_responsavel: string | null
           created_at: string | null
+          cv_candidato: string | null
+          distribuicao: string | null
           email: string | null
+          empresas_alvo: string | null
           id: string
+          idade: string | null
+          inicio_programa: string | null
+          link_relatorio: string | null
+          linkedin: string | null
+          local_residencia: string | null
+          mobilidade: string | null
           nivel_cargo: string | null
           nome: string
           nome_normalizado: string
+          observacao: string | null
           parceiro: string | null
+          posicoes_alvo: string | null
+          pretensao_salarial: string | null
+          referral_id: string | null
+          reuniao_status: string | null
+          segmento_alvo: string | null
           status: string | null
+          status_programa: string | null
           telefone: string | null
+          termino_programa: string | null
+          ultima_empresa: string | null
+          ultima_posicao: string | null
           ultimo_salario: string | null
+          ultimo_segmento: string | null
         }
         Insert: {
           area?: string | null
           consultor_responsavel?: string | null
           created_at?: string | null
+          cv_candidato?: string | null
+          distribuicao?: string | null
           email?: string | null
+          empresas_alvo?: string | null
           id?: string
+          idade?: string | null
+          inicio_programa?: string | null
+          link_relatorio?: string | null
+          linkedin?: string | null
+          local_residencia?: string | null
+          mobilidade?: string | null
           nivel_cargo?: string | null
           nome: string
           nome_normalizado: string
+          observacao?: string | null
           parceiro?: string | null
+          posicoes_alvo?: string | null
+          pretensao_salarial?: string | null
+          referral_id?: string | null
+          reuniao_status?: string | null
+          segmento_alvo?: string | null
           status?: string | null
+          status_programa?: string | null
           telefone?: string | null
+          termino_programa?: string | null
+          ultima_empresa?: string | null
+          ultima_posicao?: string | null
           ultimo_salario?: string | null
+          ultimo_segmento?: string | null
         }
         Update: {
           area?: string | null
           consultor_responsavel?: string | null
           created_at?: string | null
+          cv_candidato?: string | null
+          distribuicao?: string | null
           email?: string | null
+          empresas_alvo?: string | null
           id?: string
+          idade?: string | null
+          inicio_programa?: string | null
+          link_relatorio?: string | null
+          linkedin?: string | null
+          local_residencia?: string | null
+          mobilidade?: string | null
           nivel_cargo?: string | null
           nome?: string
           nome_normalizado?: string
+          observacao?: string | null
           parceiro?: string | null
+          posicoes_alvo?: string | null
+          pretensao_salarial?: string | null
+          referral_id?: string | null
+          reuniao_status?: string | null
+          segmento_alvo?: string | null
           status?: string | null
+          status_programa?: string | null
           telefone?: string | null
+          termino_programa?: string | null
+          ultima_empresa?: string | null
+          ultima_posicao?: string | null
           ultimo_salario?: string | null
+          ultimo_segmento?: string | null
         }
         Relationships: []
       }
@@ -65,11 +125,16 @@ export type Database = {
           candidato_id: string | null
           created_at: string | null
           data_acao: string | null
+          data_retorno: string | null
           empresa: string
+          follow_up: string | null
           formato: string | null
           id: string
           indicacao_contato: string | null
           jobhunter: string | null
+          linkedin_candidato: string | null
+          observacoes: string | null
+          origem: string | null
           resultado: string | null
           vaga: string
           vaga_link: string | null
@@ -79,11 +144,16 @@ export type Database = {
           candidato_id?: string | null
           created_at?: string | null
           data_acao?: string | null
+          data_retorno?: string | null
           empresa: string
+          follow_up?: string | null
           formato?: string | null
           id?: string
           indicacao_contato?: string | null
           jobhunter?: string | null
+          linkedin_candidato?: string | null
+          observacoes?: string | null
+          origem?: string | null
           resultado?: string | null
           vaga: string
           vaga_link?: string | null
@@ -93,11 +163,16 @@ export type Database = {
           candidato_id?: string | null
           created_at?: string | null
           data_acao?: string | null
+          data_retorno?: string | null
           empresa?: string
+          follow_up?: string | null
           formato?: string | null
           id?: string
           indicacao_contato?: string | null
           jobhunter?: string | null
+          linkedin_candidato?: string | null
+          observacoes?: string | null
+          origem?: string | null
           resultado?: string | null
           vaga?: string
           vaga_link?: string | null
