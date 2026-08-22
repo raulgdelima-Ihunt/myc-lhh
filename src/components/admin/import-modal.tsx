@@ -112,11 +112,14 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       if (foundHeaderRow === -1) {
         const firstSheetName = workbook.SheetNames[0];
-        const ws = workbook.Sheets[firstSheetName];
-        finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
-        foundHeaderRow = 0;
-        targetSheetName = firstSheetName;
+        if (firstSheetName) {
+          const ws = workbook.Sheets[firstSheetName];
+          finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
+          foundHeaderRow = 0;
+          targetSheetName = firstSheetName;
+        }
       }
+
 
       const headerRowData = finalJsonData[foundHeaderRow];
       if (!headerRowData) {
@@ -413,23 +416,26 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Referral</TableHead>
                         <TableHead>Nome</TableHead>
                         <TableHead>E-mail</TableHead>
                         <TableHead>Área</TableHead>
-                        <TableHead>Consultor</TableHead>
+                        <TableHead>Status Prog.</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {previewData.slice(0, 10).map((row, i) => (
                         <TableRow key={i}>
+                          <TableCell className="font-mono text-[10px]">{row.referral_id || "-"}</TableCell>
                           <TableCell className="font-medium">{row.nome}</TableCell>
                           <TableCell>{row.email || "-"}</TableCell>
                           <TableCell>{row.area || "-"}</TableCell>
-                          <TableCell>{row.consultor_responsavel || "-"}</TableCell>
+                          <TableCell>{row.status_programa || "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+
                 </div>
               </div>
             </div>
