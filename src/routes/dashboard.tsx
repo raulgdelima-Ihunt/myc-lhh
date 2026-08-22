@@ -10,6 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/dashboard")({
+  head: () => ({
+    meta: [
+      { title: "Meu Dashboard | MyCareer by LHH" },
+      { name: "description", content: "Acompanhe suas indicações de mercado em tempo real." },
+      { property: "og:title", content: "Meu Dashboard | MyCareer by LHH" },
+      { property: "og:image", content: "/logo.svg" },
+    ],
+  }),
   component: DashboardPage,
 });
 

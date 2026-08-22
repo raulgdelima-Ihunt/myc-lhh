@@ -19,6 +19,14 @@ import { ImportCandidatosModal } from "@/components/admin/import-modal";
 import { ImportIndicacoesModal } from "@/components/admin/import-indicacoes-modal";
 
 export const Route = createFileRoute("/admin/")({
+  head: () => ({
+    meta: [
+      { title: "Painel Admin | MyCareer by LHH" },
+      { name: "description", content: "Administração do Portal MyCareer by LHH." },
+      { property: "og:title", content: "Painel Admin | MyCareer by LHH" },
+      { property: "og:image", content: "/logo.svg" },
+    ],
+  }),
   component: AdminPage,
 });
 
