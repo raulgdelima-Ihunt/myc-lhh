@@ -140,7 +140,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxOrigem = getCol(["origem"]);
         const idxEmpresa = getCol(["empresa", "consultoria"]);
         const idxLink = getCol(["link"]);
-        const idxLinkedin = getCol(["linkedin"]);
+        const idxLinkedin = getCol(["linkedin_candidato", "linkedin"]);
         const idxDataAcao = getCol(["data ação", "data acao", "data"]);
         const idxDataRetorno = getCol(["data retorno"]);
         const idxFollowUp = getCol(["follow up"]);
