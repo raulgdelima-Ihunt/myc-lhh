@@ -43,13 +43,13 @@ function AdminPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-[#F5F5F5] p-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="flex items-center justify-between rounded-xl bg-white p-6 shadow-sm border border-gray-100 mb-8">
+        <div className="flex items-center justify-between rounded-xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo</h1>
-            <div className="mt-1 flex items-center text-sm text-gray-500">
+            <h1 className="text-2xl font-bold text-[#333333]">Painel Administrativo</h1>
+            <div className="mt-1 flex items-center text-sm text-[#666666]">
               <User size={16} className="mr-1.5" />
               <span>Logado como: {user?.email}</span>
             </div>
@@ -57,7 +57,7 @@ function AdminPage() {
           <div className="flex gap-3">
             <Button
               onClick={() => setIsImportModalOpen(true)}
-              className="bg-violet-600 hover:bg-violet-700 text-white"
+              className="bg-primary hover:bg-[#5A2574] text-white rounded-[6px]"
             >
               <FileSpreadsheet size={18} className="mr-2" />
               Importar Candidatos
@@ -65,14 +65,14 @@ function AdminPage() {
             <Button
               onClick={() => setIsImportIndicacoesModalOpen(true)}
               variant="outline"
-              className="border-violet-600 text-violet-600 hover:bg-violet-50"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
             >
               <Briefcase size={18} className="mr-2" />
               Importar Indicações
             </Button>
             <button
               onClick={handleLogout}
-              className="flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="flex items-center rounded-[6px] border border-border px-4 py-2 text-sm font-medium text-[#666666] transition hover:bg-gray-50"
             >
               <LogOut size={18} className="mr-2" />
               Sair
@@ -82,12 +82,12 @@ function AdminPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total de Candidatos</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-[#666666] uppercase tracking-wider">Total de Candidatos</p>
+                  <p className="text-3xl font-bold text-primary">
                     {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin text-gray-300" /> : stats?.total || 0}
                   </p>
                 </div>
@@ -98,12 +98,12 @@ function AdminPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Com E-mail</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-[#666666] uppercase tracking-wider">Com E-mail</p>
+                  <p className="text-3xl font-bold text-primary">
                     {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin text-gray-300" /> : stats?.withEmail || 0}
                   </p>
                 </div>
@@ -114,12 +114,12 @@ function AdminPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Sem E-mail</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-[#666666] uppercase tracking-wider">Sem E-mail</p>
+                  <p className="text-3xl font-bold text-primary">
                     {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin text-gray-300" /> : stats?.withoutEmail || 0}
                   </p>
                 </div>
@@ -130,17 +130,17 @@ function AdminPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total de Indicações</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-sm font-medium text-[#666666] uppercase tracking-wider">Total de Indicações</p>
+                  <p className="text-3xl font-bold text-primary">
                     {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin text-gray-300" /> : stats?.totalIndicacoes || 0}
                   </p>
                 </div>
                 <div className="p-3 bg-violet-50 rounded-lg">
-                  <Briefcase className="h-6 w-6 text-violet-600" />
+                  <Briefcase className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
@@ -148,9 +148,10 @@ function AdminPage() {
         </div>
 
         {/* Main Content Table */}
-        <div className="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 border-b border-gray-100 flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-gray-900">Listagem de Candidatos</h2>
+        <div className="rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
+          <div className="p-6 border-b border-border flex items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold text-[#333333]">Listagem de Candidatos</h2>
+
             <div className="relative max-w-sm flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -170,48 +171,44 @@ function AdminPage() {
               </div>
             ) : candidatos && candidatos.length > 0 ? (
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-[#F5F5F5]">
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead>Área</TableHead>
-                    <TableHead>Nível de Cargo</TableHead>
-                    <TableHead>Consultor</TableHead>
-                    <TableHead>Status</TableHead>
-
+                    <TableHead className="font-semibold">Nome</TableHead>
+                    <TableHead className="font-semibold">E-mail</TableHead>
+                    <TableHead className="font-semibold">Área</TableHead>
+                    <TableHead className="font-semibold">Nível de Cargo</TableHead>
+                    <TableHead className="font-semibold">Consultor</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {candidatos.map((c) => (
+                  {candidatos.map((c, index) => (
                     <TableRow 
                       key={c.id} 
-                      className="hover:bg-gray-100 cursor-pointer transition-colors"
+                      className={`cursor-pointer transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}
                       onClick={() => window.location.href = '/admin/candidato/' + c.id}
                     >
-
-                      <TableCell className="font-medium text-gray-900">{c.nome}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {c.email ? c.email : <span className="text-gray-400 italic text-sm">Sem e-mail</span>}
+                      <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
+                      <TableCell className="text-[#666666]">
+                        {c.email ? c.email : <span className="text-gray-300 italic text-sm">Sem e-mail</span>}
                       </TableCell>
-
-                      <TableCell className="text-gray-600">{c.area || "-"}</TableCell>
-                      <TableCell className="text-gray-600">{c.nivel_cargo || "-"}</TableCell>
-                      <TableCell className="text-gray-600">{c.consultor_responsavel || "-"}</TableCell>
+                      <TableCell className="text-[#666666]">{c.area || "-"}</TableCell>
+                      <TableCell className="text-[#666666]">{c.nivel_cargo || "-"}</TableCell>
+                      <TableCell className="text-[#666666]">{c.consultor_responsavel || "-"}</TableCell>
                       <TableCell>
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
+                          c.status?.toLowerCase() === 'concluído' 
+                            ? 'bg-gray-100 text-gray-600 ring-gray-500/20' 
+                            : 'bg-green-50 text-[#4CAF50] ring-green-600/20'
+                        }`}>
                           {c.status}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                          {c.status}
-                        </span>
-                      </TableCell>
-
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+
             ) : (
               <div className="p-12 text-center">
                 <p className="text-gray-500">
