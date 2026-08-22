@@ -67,6 +67,8 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
 
   const parseExcelDate = (val: any) => {
     if (!val) return null;
