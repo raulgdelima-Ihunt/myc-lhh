@@ -490,13 +490,14 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                       ))}
                     </TableBody>
                   </Table>
-                  {previewData.length > 50 && (
+                  {previewData.filter(row => !showOnlyUnlinked || (!row.vinculado && !row.manual_ignore)).length > 100 && (
                     <div className="p-4 text-center text-sm text-gray-500 bg-gray-50 border-t">
-                      Mostrando apenas os primeiros 50 de {previewData.length} registros.
+                      Mostrando apenas os primeiros 100 de {previewData.filter(row => !showOnlyUnlinked || (!row.vinculado && !row.manual_ignore)).length} registros filtrados.
                     </div>
                   )}
                 </div>
               </div>
+
             </div>
           )}
         </div>
