@@ -450,8 +450,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                             ) : (
                               <Select 
                                 onValueChange={(val) => handleManualVinculation(i, val)}
-                                value={row.manual_ignore ? "ignore" : undefined}
+                                value={row.manual_ignore ? "ignore" : (row.candidato_id || "")}
                               >
+
                                 <SelectTrigger className="h-8 text-xs border-amber-300 bg-amber-50">
                                   <SelectValue placeholder="Selecione um candidato..." />
                                 </SelectTrigger>
