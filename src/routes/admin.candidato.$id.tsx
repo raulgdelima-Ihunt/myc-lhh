@@ -10,6 +10,13 @@ import { createCandidateAccess } from "@/lib/auth.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/candidato/$id")({
+  head: () => ({
+    meta: [
+      { title: "Detalhe do Candidato | MyCareer by LHH" },
+      { property: "og:title", content: "Detalhe do Candidato | MyCareer by LHH" },
+      { property: "og:image", content: "/logo.svg" },
+    ],
+  }),
   component: CandidatoDetail,
 });
 
