@@ -9,6 +9,13 @@ import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data
 import { createCandidateAccess, getCandidateAccessStatus, resetCandidatePassword } from "@/lib/auth.functions";
 import { toast } from "sonner";
 
+const DEFAULT_ACTION_DATE = "1900-01-01";
+
+function formatActionDate(date: string | null | undefined) {
+  if (!date || date === DEFAULT_ACTION_DATE) return "-";
+  return new Date(date).toLocaleDateString("pt-BR");
+}
+
 export const Route = createFileRoute("/admin/candidato/$id")({
   head: () => ({
     meta: [
@@ -276,7 +283,7 @@ function CandidatoDetail() {
                 <CardContent className="pt-6">
                   <p className="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">Última Indicação</p>
                   <p className="text-xl font-bold text-[#333333]">
-                    {indicacoes?.[0]?.data_acao ? new Date(indicacoes[0].data_acao).toLocaleDateString('pt-BR') : '-'}
+                    {formatActionDate(indicacoes?.[0]?.data_acao)}
                   </p>
                 </CardContent>
               </Card>
@@ -313,7 +320,7 @@ function CandidatoDetail() {
                         <tr key={i.id} className={`transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}>
                           <td className="px-6 py-4 text-sm font-semibold text-[#333333]">{i.vaga}</td>
                           <td className="px-6 py-4 text-sm text-[#666666]">{i.empresa}</td>
-                          <td className="px-6 py-4 text-sm text-[#666666] text-center font-medium">{i.data_acao}</td>
+                          <td className="px-6 py-4 text-sm text-[#666666] text-center font-medium">{formatActionDate(i.data_acao)}</td>
                           <td className="px-6 py-4">
                             <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${
                               i.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-[#4CAF50]' :

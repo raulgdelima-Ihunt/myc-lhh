@@ -17,6 +17,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const DEFAULT_ACTION_DATE = "1900-01-01";
+
+function formatActionDate(date: string | null | undefined) {
+  if (!date || date === DEFAULT_ACTION_DATE) return "-";
+  return new Date(date).toLocaleDateString("pt-BR");
+}
+
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
@@ -82,7 +89,7 @@ function DashboardPage() {
       const matchesSearch = ind.vaga.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            ind.empresa.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const date = ind.data_acao ? new Date(ind.data_acao) : null;
+      const date = ind.data_acao && ind.data_acao !== DEFAULT_ACTION_DATE ? new Date(ind.data_acao) : null;
       const month = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : null;
       const matchesMonth = monthFilter === "all" || month === monthFilter;
       
@@ -100,7 +107,7 @@ function DashboardPage() {
     
     const uniqueCompanies = new Set(data.indicacoes.map(i => i.empresa));
     const thisMonthIndications = data.indicacoes.filter(i => {
-      const d = i.data_acao ? new Date(i.data_acao) : null;
+      const d = i.data_acao && i.data_acao !== DEFAULT_ACTION_DATE ? new Date(i.data_acao) : null;
       return d && `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === currentMonth;
     });
 
@@ -114,7 +121,7 @@ function DashboardPage() {
   const uniqueMonths = useMemo(() => {
     if (!data?.indicacoes) return [];
     const months = new Set(data.indicacoes.map(ind => {
-      const d = ind.data_acao ? new Date(ind.data_acao) : null;
+      const d = ind.data_acao && ind.data_acao !== DEFAULT_ACTION_DATE ? new Date(ind.data_acao) : null;
       return d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : null;
     }).filter(Boolean));
     return Array.from(months).sort().reverse();
@@ -296,7 +303,7 @@ function DashboardPage() {
 
                             <td className="px-6 py-4 text-[#666666]">{ind.empresa}</td>
                             <td className="px-6 py-4 text-[#666666] text-sm">
-                              {ind.data_acao ? new Date(ind.data_acao).toLocaleDateString('pt-BR') : '-'}
+                              {formatActionDate(ind.data_acao)}
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
