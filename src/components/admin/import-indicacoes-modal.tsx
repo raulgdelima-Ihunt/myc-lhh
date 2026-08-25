@@ -48,7 +48,51 @@ interface MappedIndication {
   jobhunter: string;
   vinculado: boolean;
   manual_ignore?: boolean;
+  importStatus?: "new" | "existing";
   suggestions?: { id: string; nome: string }[];
+}
+
+const DEFAULT_ACTION_DATE = "1900-01-01";
+
+function getActionDateForStorage(date: string | null | undefined) {
+  return date || DEFAULT_ACTION_DATE;
+}
+
+function getActionDateForDisplay(date: string | null | undefined) {
+  return !date || date === DEFAULT_ACTION_DATE ? "-" : date;
+}
+
+function buildDedupKey(
+  candidatoId: string | null | undefined,
+  vaga: string | null | undefined,
+  empresa: string | null | undefined,
+  dataAcao: string | null | undefined,
+) {
+  return [
+    candidatoId || "",
+    String(vaga || "").trim(),
+    String(empresa || "").trim(),
+    getActionDateForStorage(dataAcao),
+  ].join("||");
+}
+
+function recomputeImportStatus(data: MappedIndication[], existingKeys: Set<string>) {
+  const seenKeys = new Set<string>();
+
+  return data.map((item): MappedIndication => {
+    if (!item.vinculado || !item.candidato_id || item.manual_ignore) {
+      const itemWithoutStatus = { ...item };
+      delete itemWithoutStatus.importStatus;
+      return itemWithoutStatus;
+    }
+
+    const dataAcao = getActionDateForStorage(item.data_acao);
+    const key = buildDedupKey(item.candidato_id, item.vaga, item.empresa, dataAcao);
+    const importStatus = existingKeys.has(key) || seenKeys.has(key) ? "existing" : "new";
+    seenKeys.add(key);
+
+    return { ...item, data_acao: dataAcao, importStatus };
+  });
 }
 
 export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
@@ -60,9 +104,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     vinculados: 0, 
     naoVinculados: 0,
     novos: 0,
-    atualizacoes: 0
+    existentes: 0
   });
   const [showOnlyUnlinked, setShowOnlyUnlinked] = useState(false);
+  const [existingDedupKeys, setExistingDedupKeys] = useState<Set<string>>(new Set());
 
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -116,6 +161,26 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       const candidatesByReferral = new Map(
         candidatesList.filter(c => c.referral_id).map(c => [String(c.referral_id).trim(), c.id])
       );
+
+      const loadedExistingKeys = new Set<string>();
+      const pageSize = 1000;
+      for (let from = 0; ; from += pageSize) {
+        const { data: existingRows, error: existingError } = await (supabase
+          .from("indicacoes")
+          .select("candidato_id,vaga,empresa,data_acao")
+          .range(from, from + pageSize - 1) as any);
+
+        if (existingError) throw existingError;
+
+        const rows = existingRows || [];
+        rows.forEach((row: any) => {
+          loadedExistingKeys.add(buildDedupKey(row.candidato_id, row.vaga, row.empresa, row.data_acao));
+        });
+
+        if (rows.length < pageSize) break;
+      }
+
+      setExistingDedupKeys(loadedExistingKeys);
 
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
@@ -220,7 +285,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             indicacao_contato: idxTalent !== -1 ? filterPlaceholder(row[idxTalent]) : null,
             vaga_link: idxLink !== -1 ? filterPlaceholder(row[idxLink]) : null,
             formato: null, 
-            data_acao: idxDataAcao !== -1 ? (parseExcelDate(row[idxDataAcao]) as string | null) : null,
+            data_acao: idxDataAcao !== -1 ? getActionDateForStorage(parseExcelDate(row[idxDataAcao]) as string | null) : DEFAULT_ACTION_DATE,
             resultado: idxStatus !== -1 ? filterPlaceholder(row[idxStatus]) : null,
             jobhunter: sheetName,
             vinculado,
@@ -236,8 +301,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       }
 
       setDebugLog({ processed: processedSheets, ignored: ignoredSheets });
-      setPreviewData(allMappedData);
-      updateStats(allMappedData);
+      const dataWithStatus = recomputeImportStatus(allMappedData, loadedExistingKeys);
+      setPreviewData(dataWithStatus);
+      updateStats(dataWithStatus);
     } catch (error) {
       console.error("Error processing file:", error);
       toast.error("Erro ao processar o arquivo Excel.");
@@ -248,12 +314,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
   const updateStats = (data: MappedIndication[]) => {
     const vinculadosCount = data.filter(d => d.vinculado && !d.manual_ignore).length;
+    const existentesCount = data.filter(d => d.vinculado && !d.manual_ignore && d.importStatus === "existing").length;
     setStats({
       total: data.length,
       vinculados: vinculadosCount,
-      naoVinculados: data.length - vinculadosCount,
-      novos: 0,
-      atualizacoes: 0
+      naoVinculados: data.filter(d => !d.vinculado && !d.manual_ignore).length,
+      novos: data.filter(d => d.vinculado && !d.manual_ignore && d.importStatus !== "existing").length,
+      existentes: existentesCount
     });
   };
 
@@ -285,8 +352,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           candidato_id: candidatoId 
         } as MappedIndication;
       }
-      updateStats(newData);
-      return newData;
+      const dataWithStatus = recomputeImportStatus(newData, existingDedupKeys);
+      updateStats(dataWithStatus);
+      return dataWithStatus;
     });
   };
 
@@ -300,26 +368,22 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
     try {
       let insertedCount = 0;
-      let updatedCount = 0;
-
-      const toImport = previewData.filter(d => d.vinculado && d.candidato_id && !d.manual_ignore);
+      const toImport = previewData.filter(d => d.vinculado && d.candidato_id && !d.manual_ignore && d.importStatus !== "existing");
       const totalItems = toImport.length;
       
       const chunkSize = 20;
       for (let i = 0; i < totalItems; i += chunkSize) {
         const chunk = toImport.slice(i, i + chunkSize);
-        
-        await Promise.all(chunk.map(async (item) => {
-          if (!item.candidato_id) return;
-
-          const dataToUpsert = {
+        const dados = chunk
+          .filter((item) => item.candidato_id)
+          .map((item) => ({
             candidato_id: item.candidato_id,
             vaga: item.vaga,
             empresa: item.empresa,
             indicacao_contato: item.indicacao_contato,
             vaga_link: item.vaga_link,
             formato: item.formato,
-            data_acao: item.data_acao || null,
+            data_acao: getActionDateForStorage(item.data_acao),
             resultado: item.resultado,
             jobhunter: item.jobhunter,
             origem: (item as any).origem,
@@ -327,31 +391,29 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             data_retorno: (item as any).data_retorno,
             follow_up: (item as any).follow_up,
             observacoes: (item as any).observacoes,
-          };
+          }));
 
-          const { data: upserted, error: upsertError } = await (supabase
+        if (dados.length > 0) {
+          const { error: upsertError } = await (supabase
             .from("indicacoes")
-            .upsert(dataToUpsert as any, {
-              onConflict: 'candidato_id,vaga,empresa,data_acao',
-              ignoreDuplicates: false
-            })
-            .select('id') as any);
+            .upsert(dados as any, {
+              onConflict: "candidato_id,vaga,empresa,data_acao",
+              ignoreDuplicates: true,
+            }) as any);
 
           if (upsertError) {
             console.error("Upsert error details:", upsertError);
             throw upsertError;
           }
 
-          // Since we use upsert, we count total processed. 
-          // If we need distinct counts, we'd need to check if it was an insert or update.
-          insertedCount++; 
-        }));
+          insertedCount += dados.length;
+        }
 
         const currentProgress = Math.min(Math.round(((i + chunk.length) / totalItems) * 100), 100);
         setUploadProgress(currentProgress);
       }
 
-      toast.success(`${insertedCount} indicações processadas com sucesso.`);
+      toast.success(`${insertedCount} novas indicações importadas. ${stats.existentes} já existentes ignoradas.`);
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -430,6 +492,14 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                     <p className="text-xs text-red-600 font-medium uppercase">Não Vinculados</p>
                     <p className="text-2xl font-bold text-red-900">{stats.naoVinculados}</p>
                   </div>
+                  <div>
+                    <p className="text-xs text-violet-600 font-medium uppercase">Novas</p>
+                    <p className="text-2xl font-bold text-violet-900">{stats.novos}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium uppercase">Já existentes</p>
+                    <p className="text-2xl font-bold text-gray-900">{stats.existentes}</p>
+                  </div>
                 </div>
                 
                 <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-md border shadow-sm">
@@ -450,7 +520,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   Prévia e Vinculação Manual
-                  <span className="text-xs font-normal text-gray-500">(Apenas vinculados serão importados)</span>
+                  <span className="text-xs font-normal text-gray-500">({stats.novos} novas | {stats.existentes} já existentes serão ignoradas)</span>
                 </h3>
                 <div className="border rounded-lg overflow-hidden">
                   <Table>
@@ -486,8 +556,8 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                           </TableCell>
                           <TableCell className="min-w-[200px]">
                             {row.vinculado ? (
-                              <div className="text-[11px] text-green-700 font-medium flex items-center gap-1">
-                                <UserPlus size={12} /> Vinculado com sucesso
+                              <div className={`text-[11px] font-medium flex items-center gap-1 ${row.importStatus === "existing" ? "text-gray-500" : "text-green-700"}`}>
+                                <UserPlus size={12} /> {row.importStatus === "existing" ? "Já existente" : "Nova indicação"}
                               </div>
                             ) : (
                               <Select 
@@ -509,7 +579,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                           </TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.vaga}</TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.empresa}</TableCell>
-                          <TableCell>{row.data_acao || "-"}</TableCell>
+                          <TableCell>{getActionDateForDisplay(row.data_acao)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -533,10 +603,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           {file && !isProcessing && !isUploading && (
             <Button 
               onClick={handleConfirmImport} 
-              disabled={isUploading || stats.vinculados === 0}
+              disabled={isUploading || stats.novos === 0}
               className="bg-violet-600 hover:bg-violet-700"
             >
-              Confirmar Importação ({stats.vinculados})
+              Confirmar Importação ({stats.novos})
             </Button>
           )}
         </DialogFooter>

@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -30,6 +32,20 @@ function Index() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [isRecoverySession, setIsRecoverySession] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    if (hashParams.get("type") === "recovery") {
+      setIsRecoverySession(true);
+    }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +91,57 @@ function Index() {
     }
   };
 
+  const handleSendRecoveryEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setRecoveryMessage("");
+    setRecoveryLoading(true);
+
+    const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+      redirectTo: window.location.origin,
+    });
+
+    if (recoveryError) {
+      setError("Não foi possível enviar o link de recuperação. Tente novamente.");
+    } else {
+      setRecoveryMessage("Se este e-mail estiver cadastrado, você receberá um link para redefinir sua senha.");
+    }
+
+    setRecoveryLoading(false);
+  };
+
+  const handleUpdateRecoveredPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setRecoveryMessage("");
+
+    if (newPassword.length < 6) {
+      setError("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("As senhas não conferem.");
+      return;
+    }
+
+    setRecoveryLoading(true);
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (updateError) {
+      setError("Não foi possível redefinir a senha. Solicite um novo link.");
+    } else {
+      setRecoveryMessage("Senha redefinida com sucesso. Faça login com a nova senha.");
+      setIsRecoverySession(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      window.history.replaceState(null, "", window.location.pathname);
+      await supabase.auth.signOut();
+    }
+
+    setRecoveryLoading(false);
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-gray-100">
@@ -89,16 +156,53 @@ function Index() {
           </div>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        {isRecoverySession ? (
+          <form onSubmit={handleUpdateRecoveredPassword} className="space-y-4">
+            <div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
+                <Input
+                  type="password"
+                  placeholder="Nova senha"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="py-2.5 pl-10 pr-4"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
+                <Input
+                  type="password"
+                  placeholder="Confirmar nova senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="py-2.5 pl-10 pr-4"
+                  required
+                />
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {recoveryMessage && <p className="text-sm text-[#4CAF50]">{recoveryMessage}</p>}
+
+            <Button type="submit" disabled={recoveryLoading} className="w-full rounded-[6px]">
+              {recoveryLoading ? "Salvando..." : "Redefinir senha"}
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <div className="relative">
               <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
-              <input
+              <Input
                 type="email"
                 placeholder="E-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-border py-2.5 pl-10 pr-4 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="py-2.5 pl-10 pr-4"
                 required
               />
             </div>
@@ -107,12 +211,12 @@ function Index() {
           <div>
             <div className="relative">
               <Lock className="absolute left-3 top-3 text-gray-400" size={20} />
-              <input
+              <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-border py-2.5 pl-10 pr-10 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="py-2.5 pl-10 pr-10"
                 required
               />
               <button
@@ -127,20 +231,52 @@ function Index() {
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full rounded-[6px] bg-primary py-2.5 font-semibold text-white transition hover:bg-[#5A2574] disabled:opacity-70"
+            className="w-full rounded-[6px]"
           >
             {loading ? "Acessando..." : "Acessar Portal"}
-          </button>
+          </Button>
         </form>
+        )}
 
-        <div className="mt-6 text-center text-sm">
-          <a href="#" className="text-primary hover:underline">
-            Esqueci minha senha
-          </a>
-        </div>
+        {!isRecoverySession && (
+          <div className="mt-6 text-center text-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setShowForgotPassword((current) => !current);
+                setError("");
+                setRecoveryMessage("");
+                setRecoveryEmail(email);
+              }}
+              className="text-primary hover:underline"
+            >
+              Esqueci minha senha
+            </button>
+          </div>
+        )}
+
+        {showForgotPassword && !isRecoverySession && (
+          <form onSubmit={handleSendRecoveryEmail} className="mt-4 space-y-3 rounded-lg border border-border bg-[#F5F5F5] p-4">
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+              <Input
+                type="email"
+                placeholder="Digite seu e-mail"
+                value={recoveryEmail}
+                onChange={(e) => setRecoveryEmail(e.target.value)}
+                className="pl-10"
+                required
+              />
+            </div>
+            <Button type="submit" disabled={recoveryLoading} className="w-full rounded-[6px]">
+              {recoveryLoading ? "Enviando..." : "Enviar link de recuperação"}
+            </Button>
+            {recoveryMessage && <p className="text-xs leading-relaxed text-[#4CAF50]">{recoveryMessage}</p>}
+          </form>
+        )}
 
         <div className="mt-8 border-t border-border pt-6 text-center text-sm text-gray-500">
           <p>Acesso exclusivo para clientes LHH</p>

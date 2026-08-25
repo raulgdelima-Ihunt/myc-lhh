@@ -1,13 +1,28 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { AuthGuard } from "@/components/auth-guard";
-import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink } from "lucide-react";
+import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink, KeyRound } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useCandidateDashboard } from "@/hooks/use-candidato-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const DEFAULT_ACTION_DATE = "1900-01-01";
+
+function formatActionDate(date: string | null | undefined) {
+  if (!date || date === DEFAULT_ACTION_DATE) return "-";
+  return new Date(date).toLocaleDateString("pt-BR");
+}
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -27,12 +42,44 @@ function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [monthFilter, setMonthFilter] = useState("all");
   const [companyFilter, setCompanyFilter] = useState("all");
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const { data, isLoading, error } = useCandidateDashboard(user?.email || "");
 
   const handleLogout = async () => {
     await signOut();
     navigate({ to: "/" });
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword.length < 6) {
+      toast.error("A nova senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não conferem.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (updateError) {
+      toast.error("Não foi possível alterar a senha. Tente novamente.");
+    } else {
+      toast.success("Senha alterada com sucesso.");
+      setNewPassword("");
+      setConfirmPassword("");
+      setIsPasswordModalOpen(false);
+    }
+
+    setIsUpdatingPassword(false);
   };
 
   const filteredIndicacoes = useMemo(() => {
@@ -42,7 +89,7 @@ function DashboardPage() {
       const matchesSearch = ind.vaga.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            ind.empresa.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const date = ind.data_acao ? new Date(ind.data_acao) : null;
+      const date = ind.data_acao && ind.data_acao !== DEFAULT_ACTION_DATE ? new Date(ind.data_acao) : null;
       const month = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : null;
       const matchesMonth = monthFilter === "all" || month === monthFilter;
       
@@ -60,7 +107,7 @@ function DashboardPage() {
     
     const uniqueCompanies = new Set(data.indicacoes.map(i => i.empresa));
     const thisMonthIndications = data.indicacoes.filter(i => {
-      const d = i.data_acao ? new Date(i.data_acao) : null;
+      const d = i.data_acao && i.data_acao !== DEFAULT_ACTION_DATE ? new Date(i.data_acao) : null;
       return d && `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === currentMonth;
     });
 
@@ -74,7 +121,7 @@ function DashboardPage() {
   const uniqueMonths = useMemo(() => {
     if (!data?.indicacoes) return [];
     const months = new Set(data.indicacoes.map(ind => {
-      const d = ind.data_acao ? new Date(ind.data_acao) : null;
+      const d = ind.data_acao && ind.data_acao !== DEFAULT_ACTION_DATE ? new Date(ind.data_acao) : null;
       return d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : null;
     }).filter(Boolean));
     return Array.from(months).sort().reverse();
@@ -109,13 +156,26 @@ function DashboardPage() {
               />
             </div>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center rounded-[6px] border border-white/20 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/10 transition"
-            >
-              <LogOut size={16} className="mr-2" />
-              Sair
-            </button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsPasswordModalOpen(true)}
+                className="h-9 rounded-[6px] px-3 text-sm font-medium text-white hover:bg-white/10 hover:text-white"
+              >
+                <KeyRound size={16} />
+                Alterar senha
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleLogout}
+                className="h-9 rounded-[6px] border-white/20 bg-transparent px-3 text-sm font-medium text-white hover:bg-white/10 hover:text-white"
+              >
+                <LogOut size={16} />
+                Sair
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -243,7 +303,7 @@ function DashboardPage() {
 
                             <td className="px-6 py-4 text-[#666666]">{ind.empresa}</td>
                             <td className="px-6 py-4 text-[#666666] text-sm">
-                              {ind.data_acao ? new Date(ind.data_acao).toLocaleDateString('pt-BR') : '-'}
+                              {formatActionDate(ind.data_acao)}
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
@@ -287,6 +347,43 @@ function DashboardPage() {
             © 2026 LHH Recruitment Portal
           </div>
         </footer>
+
+        <Dialog open={isPasswordModalOpen} onOpenChange={setIsPasswordModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Alterar senha</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <Input
+                type="password"
+                placeholder="Nova senha"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <Input
+                type="password"
+                placeholder="Confirmar nova senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsPasswordModalOpen(false)}
+                  disabled={isUpdatingPassword}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isUpdatingPassword}>
+                  {isUpdatingPassword ? "Salvando..." : "Salvar nova senha"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </AuthGuard>
   );
