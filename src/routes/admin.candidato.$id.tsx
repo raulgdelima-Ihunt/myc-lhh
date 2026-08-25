@@ -4,9 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AuthGuard } from "@/components/auth-guard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ArrowLeft, CheckCircle, Briefcase } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, Briefcase, KeyRound } from "lucide-react";
 import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
-import { createCandidateAccess } from "@/lib/auth.functions";
+import { createCandidateAccess, getCandidateAccessStatus, resetCandidatePassword } from "@/lib/auth.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/candidato/$id")({
@@ -47,11 +47,37 @@ function DataField({ label, value, isLink }: { label: string; value?: any; isLin
 function CandidatoDetail() {
   const { id } = useParams({ from: "/admin/candidato/$id" });
   const [isCreating, setIsCreating] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [passwordAction, setPasswordAction] = useState<"created" | "reset">("created");
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   const { data: candidato, isLoading: isLoadingCandidato } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes } = useCandidatoIndicacoes(id);
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkAccess() {
+      if (!candidato?.email) {
+        setHasAccess(false);
+        return;
+      }
+
+      try {
+        const result = await getCandidateAccessStatus({ data: { email: candidato.email } });
+        if (active) setHasAccess(result.hasAccess);
+      } catch {
+        if (active) setHasAccess(false);
+      }
+    }
+
+    checkAccess();
+
+    return () => {
+      active = false;
+    };
+  }, [candidato?.email]);
 
   const handleCreateAccess = async () => {
     if (!candidato?.email) return;
@@ -67,6 +93,7 @@ function CandidatoDetail() {
       });
       
       setTempPassword(pass);
+      setPasswordAction("created");
       setHasAccess(true);
       toast.success("Acesso criado com sucesso!");
     } catch (error: any) {
@@ -79,6 +106,29 @@ function CandidatoDetail() {
       }
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!candidato?.email || !hasAccess) return;
+    setIsResettingPassword(true);
+    const pass = Math.random().toString(36).slice(-8);
+
+    try {
+      await resetCandidatePassword({
+        data: {
+          email: candidato.email,
+          password: pass,
+        }
+      });
+
+      setTempPassword(pass);
+      setPasswordAction("reset");
+      toast.success("Senha resetada com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao resetar senha: " + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -128,7 +178,7 @@ function CandidatoDetail() {
                 </div>
 
                 <div className="flex flex-col items-end gap-3">
-                  {candidato?.email && !hasAccess && !tempPassword && (
+                  {candidato?.email && hasAccess === false && !tempPassword && (
                     <Button 
                       onClick={handleCreateAccess} 
                       disabled={isCreating} 
@@ -140,9 +190,21 @@ function CandidatoDetail() {
                   )}
                   
                   {hasAccess && !tempPassword && (
-                    <div className="flex items-center gap-2 text-[#4CAF50] bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-bold text-sm">
-                      <CheckCircle size={18} />
-                      Acesso Configurado
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <div className="flex items-center gap-2 text-[#4CAF50] bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-bold text-sm">
+                        <CheckCircle size={18} />
+                        Acesso já configurado
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleResetPassword}
+                        disabled={isResettingPassword}
+                        className="rounded-[6px] border-primary text-primary hover:bg-[#F0EBF5]"
+                      >
+                        {isResettingPassword ? <Loader2 className="animate-spin mr-2" size={16} /> : <KeyRound size={16} className="mr-2" />}
+                        Resetar senha
+                      </Button>
                     </div>
                   )}
 
@@ -150,10 +212,10 @@ function CandidatoDetail() {
                     <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm animate-in zoom-in duration-300 max-w-sm">
                       <h3 className="font-bold text-amber-900 text-sm flex items-center gap-2">
                         <CheckCircle size={16} className="text-[#4CAF50]" />
-                        Acesso criado!
+                        {passwordAction === "reset" ? "Senha resetada!" : "Acesso criado!"}
                       </h3>
                       <p className="text-amber-800 text-xs mt-2 leading-relaxed">
-                        Envie estas credenciais ao candidato para que ele possa acessar o portal:
+                        Anote e envie estas credenciais ao candidato:
                       </p>
                       <div className="mt-3 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
                         <p className="text-xs text-[#666666] font-medium">E-mail: <span className="text-[#333333] select-all font-bold">{candidato?.email}</span></p>

@@ -52,3 +52,80 @@ export const createCandidateAccess = createServerFn({ method: "POST" })
 
     return { success: true, userId: userData.user?.id };
   });
+
+export const getCandidateAccessStatus = createServerFn({ method: "GET" })
+  .validator((data: unknown) =>
+    z.object({
+      email: z.string().email(),
+    }).parse(data)
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    const { data: roleData, error: roleError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .single();
+
+    if (roleError || roleData?.role !== "admin") {
+      throw new Error("Unauthorized: Only admins can check candidate access");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+
+    if (usersError) throw usersError;
+
+    const user = usersData.users.find(
+      (candidateUser) => candidateUser.email?.toLowerCase() === data.email.toLowerCase(),
+    );
+
+    return { hasAccess: Boolean(user), userId: user?.id ?? null };
+  });
+
+export const resetCandidatePassword = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z.object({
+      email: z.string().email(),
+      password: z.string().min(6),
+    }).parse(data)
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    const { data: roleData, error: roleError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .single();
+
+    if (roleError || roleData?.role !== "admin") {
+      throw new Error("Unauthorized: Only admins can reset candidate passwords");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+
+    if (usersError) throw usersError;
+
+    const user = usersData.users.find(
+      (candidateUser) => candidateUser.email?.toLowerCase() === data.email.toLowerCase(),
+    );
+
+    if (!user) {
+      throw new Error("Candidato ainda não possui acesso criado");
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+      password: data.password,
+    });
+
+    if (updateError) throw updateError;
+
+    return { success: true, userId: user.id };
+  });
