@@ -25,9 +25,10 @@ export const createCandidateAccess = createServerFn({ method: "POST" })
     // 2. Use supabaseAdmin to create the user and assign the role
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Use admin API to create user
+    // Use admin API to create user (normalized e-mail, auto-confirmed)
+    const cleanEmail = data.email.trim().toLowerCase();
     const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
+      email: cleanEmail,
       password: data.password,
       email_confirm: true
     });

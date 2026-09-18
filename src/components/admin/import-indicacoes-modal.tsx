@@ -156,8 +156,17 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         .from("candidatos")
         .select("id, nome, nome_normalizado, referral_id") as any);
       
-      const candidatesList = (candidates || []) as any[];
-      const candidatesByName = new Map(candidatesList.map(c => [c.nome_normalizado, c.id]));
+      const candidatesList = ((candidates || []) as any[]).map((c) => ({
+        ...c,
+        // Accent-free, lowercase, single-spaced key used for all matching
+        matchKey: normalizeNameAggressive(c.nome || c.nome_normalizado || ""),
+      }));
+      const candidatesByName = new Map<string, string>();
+      candidatesList.forEach((c) => {
+        if (c.matchKey && !candidatesByName.has(c.matchKey)) candidatesByName.set(c.matchKey, c.id);
+        const alt = normalizeNameAggressive(c.nome_normalizado || "");
+        if (alt && !candidatesByName.has(alt)) candidatesByName.set(alt, c.id);
+      });
       const candidatesByReferral = new Map(
         candidatesList.filter(c => c.referral_id).map(c => [String(c.referral_id).trim(), c.id])
       );
@@ -214,7 +223,12 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxReferral = getCol(["referral"]);
         const idxNome = getCol(["nome", "cliente", "assessorado"]);
         const idxOrigem = getCol(["origem"]);
-        const idxLink = getCol(["link"]);
+        // "LINK VAGA" — never confuse it with a "Linkedin" column
+        const idxLink = (() => {
+          const exact = headerRow.findIndex(h => h.includes("link vaga") || h.includes("link da vaga"));
+          if (exact !== -1) return exact;
+          return headerRow.findIndex(h => h.includes("link") && !h.includes("linkedin"));
+        })();
         const idxLinkedin = getCol(["linkedin_candidato", "linkedin"]);
         const idxDataAcao = getCol(["data ação", "data acao", "data"]);
         const idxDataRetorno = getCol(["data retorno"]);
@@ -261,11 +275,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             } 
           }
 
-          // Step 3: Partial Match (First 2 words)
+          // Step 3: Partial Match (First 2 words, accent-insensitive)
           if (!vinculado && normNomePlanilha) {
             const firstTwoWords = normNomePlanilha.split(' ').slice(0, 2).join(' ');
             if (firstTwoWords.length > 5) {
-              const match = candidatesList.find(c => c.nome_normalizado.startsWith(firstTwoWords));
+              const match = candidatesList.find(c => c.matchKey.startsWith(firstTwoWords));
               if (match) {
                 candidatoId = match.id;
                 vinculado = true;
@@ -324,39 +338,46 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     });
   };
 
-  const handleManualVinculation = (index: number, candidatoId: string | 'ignore') => {
-    // Correctly calculate the index in the full array even when filtered
-    const visibleData = previewData.filter(row => !showOnlyUnlinked || (!row.vinculado && !row.manual_ignore));
-    const targetItem = visibleData[index];
-    if (!targetItem) return;
-
-    // Find the original index in previewData
-    const originalIndex = previewData.findIndex(item => item === targetItem);
-    if (originalIndex === -1) return;
-
+  // Applies one decision to EVERY row with the same name in the spreadsheet
+  const handleManualVinculation = (nomeKey: string, candidatoId: string | 'ignore') => {
     setPreviewData(prev => {
-      const newData = [...prev];
-      const item = newData[originalIndex];
-      if (candidatoId === 'ignore') {
-        newData[originalIndex] = { 
-          ...item, 
-          vinculado: false, 
-          manual_ignore: true, 
-          candidato_id: null 
-        } as MappedIndication;
-      } else {
-        newData[originalIndex] = { 
-          ...item, 
-          vinculado: true, 
-          manual_ignore: false, 
-          candidato_id: candidatoId 
-        } as MappedIndication;
-      }
+      const newData = prev.map((item) => {
+        if (item.vinculado) return item;
+        if (normalizeNameAggressive(item.candidato_nome_original) !== nomeKey) return item;
+        return candidatoId === 'ignore'
+          ? ({ ...item, vinculado: false, manual_ignore: true, candidato_id: null } as MappedIndication)
+          : ({ ...item, vinculado: true, manual_ignore: false, candidato_id: candidatoId } as MappedIndication);
+      });
       const dataWithStatus = recomputeImportStatus(newData, existingDedupKeys);
       updateStats(dataWithStatus);
       return dataWithStatus;
     });
   };
+
+  // One decision per distinct unmatched name, with its occurrence count
+  const unlinkedGroups = React.useMemo(() => {
+    const groups = new Map<
+      string,
+      { key: string; nome: string; count: number; ignored: boolean; suggestions: { id: string; nome: string }[] }
+    >();
+    previewData.forEach((row) => {
+      if (row.vinculado) return;
+      const key = normalizeNameAggressive(row.candidato_nome_original);
+      const existing = groups.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        groups.set(key, {
+          key,
+          nome: row.candidato_nome_original,
+          count: 1,
+          ignored: Boolean(row.manual_ignore),
+          suggestions: row.suggestions ?? [],
+        });
+      }
+    });
+    return Array.from(groups.values()).sort((a, b) => b.count - a.count);
+  }, [previewData]);
 
 
 
@@ -517,9 +538,49 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
               </div>
 
 
+              {unlinkedGroups.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">
+                    Nomes a vincular ({unlinkedGroups.length})
+                    <span className="ml-2 text-xs font-normal text-gray-500">
+                      Uma decisão por nome — aplicada a todas as indicações desse nome.
+                    </span>
+                  </h3>
+                  <div className="space-y-2 max-h-[260px] overflow-auto rounded-lg border p-3">
+                    {unlinkedGroups.map((group) => (
+                      <div
+                        key={group.key}
+                        className={`flex items-center justify-between gap-3 rounded-md border px-3 py-2 ${group.ignored ? "bg-gray-50 opacity-60" : "bg-amber-50/40"}`}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-gray-800">{group.nome}</p>
+                          <p className="text-xs text-gray-500">{group.count} indicaç{group.count === 1 ? "ão" : "ões"}</p>
+                        </div>
+                        <Select
+                          onValueChange={(val) => handleManualVinculation(group.key, val)}
+                          value={group.ignored ? "ignore" : ""}
+                        >
+                          <SelectTrigger className="h-8 w-[280px] text-xs border-amber-300 bg-white">
+                            <SelectValue placeholder="Selecione um candidato..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ignore" className="text-red-600 font-medium">
+                              Ignorar (não é candidato)
+                            </SelectItem>
+                            {group.suggestions.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>É este: {s.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  Prévia e Vinculação Manual
+                  Prévia
                   <span className="text-xs font-normal text-gray-500">({stats.novos} novas | {stats.existentes} já existentes serão ignoradas)</span>
                 </h3>
                 <div className="border rounded-lg overflow-hidden">
@@ -559,22 +620,12 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                               <div className={`text-[11px] font-medium flex items-center gap-1 ${row.importStatus === "existing" ? "text-gray-500" : "text-green-700"}`}>
                                 <UserPlus size={12} /> {row.importStatus === "existing" ? "Já existente" : "Nova indicação"}
                               </div>
+                            ) : row.manual_ignore ? (
+                              <span className="text-[11px] font-medium text-gray-500">Ignorado</span>
                             ) : (
-                              <Select 
-                                onValueChange={(val) => handleManualVinculation(i, val)}
-                                value={row.manual_ignore ? "ignore" : (row.candidato_id || "")}
-                              >
-
-                                <SelectTrigger className="h-8 text-xs border-amber-300 bg-amber-50">
-                                  <SelectValue placeholder="Selecione um candidato..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="ignore" className="text-red-600 font-medium">Ignorar (Não é candidato)</SelectItem>
-                                  {row.suggestions?.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>É este: {s.nome}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <span className="text-[11px] font-medium text-amber-700">
+                                Aguardando vinculação acima
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.vaga}</TableCell>

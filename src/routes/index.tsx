@@ -39,6 +39,7 @@ function Index() {
   const [isRecoverySession, setIsRecoverySession] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [debugInfo, setDebugInfo] = useState("");
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -50,14 +51,18 @@ function Index() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setDebugInfo("");
+
+    const cleanEmail = email.trim().toLowerCase();
 
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: cleanEmail,
       password,
     });
 
     if (error) {
+      setDebugInfo(`Auth: erro (${error.message}) | Candidato encontrado: - | Redirecionando para: -`);
       setError("E-mail ou senha incorretos");
       setLoading(false);
     } else {
@@ -66,25 +71,31 @@ function Index() {
         .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id)
-        .single();
+        .maybeSingle();
 
       if (roleData?.role === "admin") {
+        setDebugInfo("Auth: sucesso | Perfil: admin | Redirecionando para: /admin");
         navigate({ to: "/admin" });
       } else if (roleData?.role === "consultor") {
+        setDebugInfo("Auth: sucesso | Perfil: consultor | Redirecionando para: /consultor");
         navigate({ to: "/consultor" });
       } else {
-        // If not admin, check if candidate exists
+        // Case-insensitive candidate lookup (spreadsheet e-mails vary in casing/spacing)
         const { data: candidateData } = await supabase
           .from("candidatos")
           .select("id")
-          .eq("email", email)
+          .ilike("email", cleanEmail)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (candidateData) {
+          setDebugInfo("Auth: sucesso | Candidato encontrado: sim | Redirecionando para: /dashboard");
           navigate({ to: "/dashboard" });
         } else {
+          setDebugInfo(
+            `Auth: sucesso | Candidato encontrado: não (${cleanEmail}) | Redirecionando para: -`,
+          );
           setError("Acesso não autorizado. Entre em contato com seu consultor.");
           await supabase.auth.signOut();
           setLoading(false);
@@ -232,6 +243,12 @@ function Index() {
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {debugInfo && (
+            <p className="rounded-md bg-gray-100 p-2 text-[11px] font-mono text-gray-600">
+              {debugInfo}
+            </p>
+          )}
 
           <Button
             type="submit"
