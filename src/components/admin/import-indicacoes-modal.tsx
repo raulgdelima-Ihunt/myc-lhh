@@ -533,9 +533,49 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
               </div>
 
 
+              {unlinkedGroups.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">
+                    Nomes a vincular ({unlinkedGroups.length})
+                    <span className="ml-2 text-xs font-normal text-gray-500">
+                      Uma decisão por nome — aplicada a todas as indicações desse nome.
+                    </span>
+                  </h3>
+                  <div className="space-y-2 max-h-[260px] overflow-auto rounded-lg border p-3">
+                    {unlinkedGroups.map((group) => (
+                      <div
+                        key={group.key}
+                        className={`flex items-center justify-between gap-3 rounded-md border px-3 py-2 ${group.ignored ? "bg-gray-50 opacity-60" : "bg-amber-50/40"}`}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-gray-800">{group.nome}</p>
+                          <p className="text-xs text-gray-500">{group.count} indicaç{group.count === 1 ? "ão" : "ões"}</p>
+                        </div>
+                        <Select
+                          onValueChange={(val) => handleManualVinculation(group.key, val)}
+                          value={group.ignored ? "ignore" : ""}
+                        >
+                          <SelectTrigger className="h-8 w-[280px] text-xs border-amber-300 bg-white">
+                            <SelectValue placeholder="Selecione um candidato..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ignore" className="text-red-600 font-medium">
+                              Ignorar (não é candidato)
+                            </SelectItem>
+                            {group.suggestions.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>É este: {s.nome}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                  Prévia e Vinculação Manual
+                  Prévia
                   <span className="text-xs font-normal text-gray-500">({stats.novos} novas | {stats.existentes} já existentes serão ignoradas)</span>
                 </h3>
                 <div className="border rounded-lg overflow-hidden">
