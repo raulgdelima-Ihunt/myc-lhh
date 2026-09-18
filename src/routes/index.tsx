@@ -244,6 +244,12 @@ function Index() {
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
+          {debugInfo && (
+            <p className="rounded-md bg-gray-100 p-2 text-[11px] font-mono text-gray-600">
+              {debugInfo}
+            </p>
+          )}
+
           <Button
             type="submit"
             disabled={loading}
