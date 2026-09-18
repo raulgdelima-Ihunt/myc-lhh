@@ -354,59 +354,69 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
     try {
       // Never delete: keep existing candidates and their current status
-      const { data: existentes } = await supabase
+      const { data: existentes, error: fetchError } = await supabase
         .from("candidatos")
-        .select("referral_id, nome_normalizado");
+        .select("id, referral_id, nome_normalizado");
+      if (fetchError) throw fetchError;
 
-      const existingReferrals = new Set(
-        (existentes ?? []).map((r: any) => String(r.referral_id ?? "")).filter(Boolean),
-      );
-      const existingNomes = new Set(
-        (existentes ?? []).map((r: any) => String(r.nome_normalizado ?? "")).filter(Boolean),
-      );
-
-      const rowsToUpsert = previewData.map((c) => {
-        const alreadyExists =
-          (c.referral_id && existingReferrals.has(String(c.referral_id))) ||
-          existingNomes.has(c.nome_normalizado);
-
-        if (!alreadyExists) return c;
-        const { status, ...rest } = c;
-        return rest;
+      const byReferral = new Map<string, string>();
+      const byNome = new Map<string, string>();
+      (existentes ?? []).forEach((r: any) => {
+        if (r.referral_id) byReferral.set(String(r.referral_id), r.id);
+        if (r.nome_normalizado) byNome.set(String(r.nome_normalizado), r.id);
       });
 
+      // Deduplicate rows inside the spreadsheet itself (last one wins)
+      const uniqueRows = new Map<string, any>();
+      previewData.forEach((c) => {
+        const key = c.referral_id
+          ? `ref:${String(c.referral_id)}`
+          : `nome:${c.nome_normalizado}`;
+        uniqueRows.set(key, c);
+      });
 
-      // Process in chunks to avoid timeout
+      const toInsert: any[] = [];
+      const toUpdate: { id: string; row: any }[] = [];
+
+      uniqueRows.forEach((c) => {
+        const existingId =
+          (c.referral_id ? byReferral.get(String(c.referral_id)) : undefined) ??
+          (c.nome_normalizado ? byNome.get(String(c.nome_normalizado)) : undefined);
+
+        if (existingId) {
+          // Preserve the status already set in the portal
+          const { status, ...rest } = c;
+          toUpdate.push({ id: existingId, row: rest });
+        } else {
+          toInsert.push(c);
+        }
+      });
+
+      // Insert new candidates in chunks
       const chunkSize = 50;
-      for (let i = 0; i < rowsToUpsert.length; i += chunkSize) {
-        const chunk = rowsToUpsert.slice(i, i + chunkSize);
-        
-        // Separate those with referral_id and those without
-        const withReferral = chunk.filter(c => c.referral_id);
-        const withoutReferral = chunk.filter(c => !c.referral_id && c.nome_normalizado);
-
-        if (withReferral.length > 0) {
-          const { error } = await supabase
-            .from("candidatos")
-            .upsert(withReferral as any, { 
-              onConflict: 'referral_id',
-              ignoreDuplicates: false 
-            });
-          if (error) throw error;
-        }
-
-        if (withoutReferral.length > 0) {
-          const { error } = await supabase
-            .from("candidatos")
-            .upsert(withoutReferral as any, { 
-              onConflict: 'nome_normalizado',
-              ignoreDuplicates: false 
-            });
-          if (error) throw error;
-        }
+      for (let i = 0; i < toInsert.length; i += chunkSize) {
+        const { error } = await supabase
+          .from("candidatos")
+          .insert(toInsert.slice(i, i + chunkSize) as any);
+        if (error) throw error;
       }
 
-      toast.success(`Importação concluída: ${previewData.length} candidatos processados.`);
+      // Update existing candidates by id (avoids unique-constraint conflicts)
+      const updateBatch = 20;
+      for (let i = 0; i < toUpdate.length; i += updateBatch) {
+        const batch = toUpdate.slice(i, i + updateBatch);
+        const results = await Promise.all(
+          batch.map(({ id, row }) =>
+            supabase.from("candidatos").update(row as any).eq("id", id),
+          ),
+        );
+        const failed = results.find((r) => r.error);
+        if (failed?.error) throw failed.error;
+      }
+
+      toast.success(
+        `Importação concluída: ${toInsert.length} novos, ${toUpdate.length} atualizados.`,
+      );
       onSuccess();
       onClose();
     } catch (error: any) {
