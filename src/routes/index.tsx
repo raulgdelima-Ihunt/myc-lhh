@@ -39,6 +39,7 @@ function Index() {
   const [isRecoverySession, setIsRecoverySession] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [debugInfo, setDebugInfo] = useState("");
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
