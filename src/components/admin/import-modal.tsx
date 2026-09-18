@@ -355,18 +355,28 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
     setIsUploading(true);
 
     try {
-      if (clearDatabase) {
-        // Delete candidates that are not users (to avoid breaking auth)
-        // or just clear all if the admin understands the consequence.
-        // For safety in this specific flow, we delete all candidates.
-        const { error: deleteError } = await supabase
-          .from("candidatos")
-          .delete()
-          .neq("status", "non_existent_status"); // Delete all rows
-        
-        if (deleteError) throw deleteError;
-        toast.info("Base de dados limpa com sucesso.");
-      }
+      // Never delete: keep existing candidates and their current status
+      const { data: existentes } = await supabase
+        .from("candidatos")
+        .select("referral_id, nome_normalizado");
+
+      const existingReferrals = new Set(
+        (existentes ?? []).map((r: any) => String(r.referral_id ?? "")).filter(Boolean),
+      );
+      const existingNomes = new Set(
+        (existentes ?? []).map((r: any) => String(r.nome_normalizado ?? "")).filter(Boolean),
+      );
+
+      const rowsToUpsert = previewData.map((c) => {
+        const alreadyExists =
+          (c.referral_id && existingReferrals.has(String(c.referral_id))) ||
+          existingNomes.has(c.nome_normalizado);
+
+        if (!alreadyExists) return c;
+        const { status, ...rest } = c;
+        return rest;
+      });
+
 
       // Process in chunks to avoid timeout
       const chunkSize = 50;
