@@ -171,7 +171,27 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxLinkedin = getColumnIndex(["LINKEDIN"]);
       const idxInicio = getColumnIndex(["INÍCIO"]);
       const idxTermino = getColumnIndex(["TÉRMINO"]);
-      const idxStatusProg = getColumnIndex(["STATUS PROGRAMA"]);
+      const idxStatusProg =
+        getColumnIndex(["STATUS PROGRAMA", "STATUS PROG"]) !== -1
+          ? getColumnIndex(["STATUS PROGRAMA", "STATUS PROG"])
+          : getExactColumnIndex(["STATUS"]);
+      const idxPrograma = getExactColumnIndex(["PROGRAMA"]);
+      const idxStatusDte = getColumnIndex(["STATUS DTE"]);
+      const idxStatusOrbit = getColumnIndex(["STATUS ORBIT"]);
+      const idxDataCvDte = getColumnIndex(["DATA DE CV DTE", "DATA CV DTE"]);
+      const idxSituacaoDte = getExactColumnIndex(["SITUAÇÃO DTE", "SITUACAO DTE"]);
+      const idxComplementoSituacaoDte = getColumnIndex(["COMPLEMENTO SITUAÇÃO DTE", "COMPLEMENTO SITUACAO DTE"]);
+      const idxTalent = getExactColumnIndex(["TALENT"]);
+      const idxForms = getColumnIndex(["FORMS PREENCHIDO"]);
+      const idxIdioma = getExactColumnIndex(["IDIOMA"]);
+      const idxNomeCompleto = getColumnIndex(["NOME COMPLETO"]);
+      const idxEmailContato = getColumnIndex(["E-MAIL PARA CONTATO", "EMAIL PARA CONTATO"]);
+      const idxEmpresasRestritas = getColumnIndex(["EMPRESAS RESTRITAS"]);
+      const idxFaixaSalarial = getColumnIndex(["FAIXA SALARIAL"]);
+      const idxCarta = getColumnIndex(["CARTA DE APRESENTAÇÃO", "CARTA DE APRESENTACAO"]);
+      const idxLgpd = getColumnIndex(["LGPD"]);
+      const idxPcd = getExactColumnIndex(["PCD", "PCD?"]);
+      const idxDescricaoPcd = getColumnIndex(["DESCRIÇÃO PCD", "DESCRICAO PCD"]);
       const idxUltimaPos = getColumnIndex(["ÚLTIMA POSIÇÃO"]);
       const idxPosicoesAlvo = getColumnIndex(["POSIÇÕES ALVO", "CARGOS DE INTERESSE"]);
       const idxUltimoSeg = getColumnIndex(["ÚLTIMO SEGMENTO"]);
