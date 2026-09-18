@@ -333,39 +333,46 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     });
   };
 
-  const handleManualVinculation = (index: number, candidatoId: string | 'ignore') => {
-    // Correctly calculate the index in the full array even when filtered
-    const visibleData = previewData.filter(row => !showOnlyUnlinked || (!row.vinculado && !row.manual_ignore));
-    const targetItem = visibleData[index];
-    if (!targetItem) return;
-
-    // Find the original index in previewData
-    const originalIndex = previewData.findIndex(item => item === targetItem);
-    if (originalIndex === -1) return;
-
+  // Applies one decision to EVERY row with the same name in the spreadsheet
+  const handleManualVinculation = (nomeKey: string, candidatoId: string | 'ignore') => {
     setPreviewData(prev => {
-      const newData = [...prev];
-      const item = newData[originalIndex];
-      if (candidatoId === 'ignore') {
-        newData[originalIndex] = { 
-          ...item, 
-          vinculado: false, 
-          manual_ignore: true, 
-          candidato_id: null 
-        } as MappedIndication;
-      } else {
-        newData[originalIndex] = { 
-          ...item, 
-          vinculado: true, 
-          manual_ignore: false, 
-          candidato_id: candidatoId 
-        } as MappedIndication;
-      }
+      const newData = prev.map((item) => {
+        if (item.vinculado) return item;
+        if (normalizeNameAggressive(item.candidato_nome_original) !== nomeKey) return item;
+        return candidatoId === 'ignore'
+          ? ({ ...item, vinculado: false, manual_ignore: true, candidato_id: null } as MappedIndication)
+          : ({ ...item, vinculado: true, manual_ignore: false, candidato_id: candidatoId } as MappedIndication);
+      });
       const dataWithStatus = recomputeImportStatus(newData, existingDedupKeys);
       updateStats(dataWithStatus);
       return dataWithStatus;
     });
   };
+
+  // One decision per distinct unmatched name, with its occurrence count
+  const unlinkedGroups = React.useMemo(() => {
+    const groups = new Map<
+      string,
+      { key: string; nome: string; count: number; ignored: boolean; suggestions: { id: string; nome: string }[] }
+    >();
+    previewData.forEach((row) => {
+      if (row.vinculado) return;
+      const key = normalizeNameAggressive(row.candidato_nome_original);
+      const existing = groups.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        groups.set(key, {
+          key,
+          nome: row.candidato_nome_original,
+          count: 1,
+          ignored: Boolean(row.manual_ignore),
+          suggestions: row.suggestions ?? [],
+        });
+      }
+    });
+    return Array.from(groups.values()).sort((a, b) => b.count - a.count);
+  }, [previewData]);
 
 
 
