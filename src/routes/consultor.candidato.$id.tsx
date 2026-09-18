@@ -122,7 +122,20 @@ function ConsultorCandidatoDetail() {
                   <tbody className="divide-y divide-border">
                     {indicacoes.map((i, index) => (
                       <tr key={i.id} className={index % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}>
-                        <td className="px-6 py-4 text-sm font-semibold text-[#333333]">{i.vaga}</td>
+                        <td className="px-6 py-4 text-sm font-semibold">
+                          {i.vaga_link && i.vaga_link.trim() ? (
+                            <a
+                              href={i.vaga_link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#6B2D8B] hover:underline"
+                            >
+                              {i.vaga}
+                            </a>
+                          ) : (
+                            <span className="text-[#333333]">{i.vaga}</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 text-sm text-[#666666]">{i.empresa}</td>
                         <td className="px-6 py-4 text-center text-sm text-[#666666]">{formatActionDate(i.data_acao)}</td>
                         <td className="px-6 py-4 text-sm text-[#666666]">{i.resultado || "Sem retorno"}</td>
