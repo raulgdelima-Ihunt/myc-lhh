@@ -156,8 +156,17 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         .from("candidatos")
         .select("id, nome, nome_normalizado, referral_id") as any);
       
-      const candidatesList = (candidates || []) as any[];
-      const candidatesByName = new Map(candidatesList.map(c => [c.nome_normalizado, c.id]));
+      const candidatesList = ((candidates || []) as any[]).map((c) => ({
+        ...c,
+        // Accent-free, lowercase, single-spaced key used for all matching
+        matchKey: normalizeNameAggressive(c.nome || c.nome_normalizado || ""),
+      }));
+      const candidatesByName = new Map<string, string>();
+      candidatesList.forEach((c) => {
+        if (c.matchKey && !candidatesByName.has(c.matchKey)) candidatesByName.set(c.matchKey, c.id);
+        const alt = normalizeNameAggressive(c.nome_normalizado || "");
+        if (alt && !candidatesByName.has(alt)) candidatesByName.set(alt, c.id);
+      });
       const candidatesByReferral = new Map(
         candidatesList.filter(c => c.referral_id).map(c => [String(c.referral_id).trim(), c.id])
       );
