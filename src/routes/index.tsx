@@ -70,6 +70,8 @@ function Index() {
 
       if (roleData?.role === "admin") {
         navigate({ to: "/admin" });
+      } else if (roleData?.role === "consultor") {
+        navigate({ to: "/consultor" });
       } else {
         // If not admin, check if candidate exists
         const { data: candidateData } = await supabase

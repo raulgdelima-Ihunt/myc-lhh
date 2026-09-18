@@ -1,8 +1,7 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { AuthGuard } from "@/components/auth-guard";
-import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase } from "lucide-react";
-import { useState } from "react";
+import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase, UserCog } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,10 +12,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useCandidatos, useAdminStats } from "@/hooks/use-candidatos";
 import { ImportCandidatosModal } from "@/components/admin/import-modal";
 import { ImportIndicacoesModal } from "@/components/admin/import-indicacoes-modal";
+import { CreateConsultorModal } from "@/components/admin/create-consultor-modal";
+import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
@@ -34,11 +42,30 @@ function AdminPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isImportIndicacoesModalOpen, setIsImportIndicacoesModalOpen] = useState(false);
+  const [isConsultorModalOpen, setIsConsultorModalOpen] = useState(false);
 
   const { data: candidatos, isLoading: isLoadingCandidatos, refetch: refetchCandidatos } = useCandidatos(searchTerm);
   const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useAdminStats();
+
+  const filteredCandidatos = useMemo(() => {
+    if (!candidatos) return [];
+    if (statusFilter === "all") return candidatos;
+    return candidatos.filter(
+      (c) => String(c.status || "").trim().toLowerCase() === statusFilter,
+    );
+  }, [candidatos, statusFilter]);
+
+  const consultores = useMemo(() => {
+    const names = new Set(
+      (candidatos ?? [])
+        .map((c) => (c.consultor_responsavel || "").trim())
+        .filter((name) => name.length > 0),
+    );
+    return Array.from(names).sort();
+  }, [candidatos]);
 
   const handleLogout = async () => {
     await signOut();
@@ -66,7 +93,15 @@ function AdminPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => setIsConsultorModalOpen(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
+            >
+              <UserCog size={18} className="mr-2" />
+              Criar acesso consultor
+            </Button>
             <Button
               onClick={() => setIsImportModalOpen(true)}
               className="bg-primary hover:bg-[#5A2574] text-white rounded-[6px]"
@@ -161,17 +196,33 @@ function AdminPage() {
 
         {/* Main Content Table */}
         <div className="rounded-xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
-          <div className="p-6 border-b border-border flex items-center justify-between gap-4">
+          <div className="p-6 border-b border-border flex flex-wrap items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-[#333333]">Listagem de Candidatos</h2>
 
-            <div className="relative max-w-sm flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar por nome..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
+              <div className="relative max-w-sm flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar por nome..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  {CANDIDATO_STATUS_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -181,7 +232,7 @@ function AdminPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-violet-600 mx-auto mb-4" />
                 <p className="text-gray-500">Carregando candidatos...</p>
               </div>
-            ) : candidatos && candidatos.length > 0 ? (
+            ) : filteredCandidatos.length > 0 ? (
               <Table>
                 <TableHeader className="bg-[#F5F5F5]">
                   <TableRow>
@@ -194,37 +245,36 @@ function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {candidatos.map((c, index) => (
-                    <TableRow 
-                      key={c.id} 
-                      className={`cursor-pointer transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}
-                      onClick={() => window.location.href = '/admin/candidato/' + c.id}
-                    >
-                      <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
-                      <TableCell className="text-[#666666]">
-                        {c.email ? c.email : <span className="text-gray-300 italic text-sm">Sem e-mail</span>}
-                      </TableCell>
-                      <TableCell className="text-[#666666]">{c.area || "-"}</TableCell>
-                      <TableCell className="text-[#666666]">{c.nivel_cargo || "-"}</TableCell>
-                      <TableCell className="text-[#666666]">{c.consultor_responsavel || "-"}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                          c.status?.toLowerCase() === 'concluído' 
-                            ? 'bg-gray-100 text-gray-600 ring-gray-500/20' 
-                            : 'bg-green-50 text-[#4CAF50] ring-green-600/20'
-                        }`}>
-                          {c.status}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredCandidatos.map((c, index) => {
+                    const statusMeta = getStatusMeta(c.status);
+                    return (
+                      <TableRow 
+                        key={c.id} 
+                        className={`cursor-pointer transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}
+                        onClick={() => window.location.href = '/admin/candidato/' + c.id}
+                      >
+                        <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
+                        <TableCell className="text-[#666666]">
+                          {c.email ? c.email : <span className="text-gray-300 italic text-sm">Sem e-mail</span>}
+                        </TableCell>
+                        <TableCell className="text-[#666666]">{c.area || "-"}</TableCell>
+                        <TableCell className="text-[#666666]">{c.nivel_cargo || "-"}</TableCell>
+                        <TableCell className="text-[#666666]">{c.consultor_responsavel || "-"}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${statusMeta.badgeClass}`}>
+                            {statusMeta.label}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
             ) : (
               <div className="p-12 text-center">
                 <p className="text-gray-500">
-                  {searchTerm 
+                  {searchTerm || statusFilter !== "all"
                     ? "Nenhum candidato encontrado para esta busca." 
                     : "Nenhum candidato cadastrado. Importe uma planilha para começar."}
                 </p>
@@ -243,6 +293,11 @@ function AdminPage() {
         isOpen={isImportIndicacoesModalOpen} 
         onClose={() => setIsImportIndicacoesModalOpen(false)} 
         onSuccess={handleImportSuccess}
+      />
+      <CreateConsultorModal
+        isOpen={isConsultorModalOpen}
+        onClose={() => setIsConsultorModalOpen(false)}
+        consultores={consultores}
       />
     </div>
   );

@@ -129,3 +129,70 @@ export const resetCandidatePassword = createServerFn({ method: "POST" })
 
     return { success: true, userId: user.id };
   });
+
+export const createConsultorAccess = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z.object({
+      email: z.string().email(),
+      password: z.string().min(6),
+      nome: z.string().min(2),
+    }).parse(data)
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    const { data: roleData, error: roleError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .single();
+
+    if (roleError || roleData?.role !== "admin") {
+      throw new Error("Unauthorized: Only admins can create consultant access");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let consultorUserId: string | null = null;
+
+    const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: data.email,
+      password: data.password,
+      email_confirm: true,
+    });
+
+    if (createError) {
+      const message = createError.message || "";
+      if (!message.toLowerCase().includes("already")) throw createError;
+
+      const { data: usersData, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+      if (usersError) throw usersError;
+
+      const existing = usersData.users.find(
+        (u) => u.email?.toLowerCase() === data.email.toLowerCase(),
+      );
+      if (!existing) throw createError;
+
+      consultorUserId = existing.id;
+      await supabaseAdmin.auth.admin.updateUserById(existing.id, { password: data.password });
+    } else {
+      consultorUserId = created.user?.id ?? null;
+    }
+
+    if (!consultorUserId) throw new Error("Não foi possível criar o usuário do consultor");
+
+    const { error: deleteRoleError } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", consultorUserId);
+    if (deleteRoleError) throw deleteRoleError;
+
+    const { error: insertRoleError } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: consultorUserId, role: "consultor", nome_consultor: data.nome.trim() });
+    if (insertRoleError) throw insertRoleError;
+
+    return { success: true, userId: consultorUserId };
+  });

@@ -17,8 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Upload } from "lucide-react";
@@ -41,11 +39,17 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
     totalBeforeFilter: number;
     totalAfterFilter: number;
   } | null>(null);
-  const [stats, setStats] = useState({ total: 0, withEmail: 0, withoutEmail: 0 });
+  const [stats, setStats] = useState({
+    total: 0,
+    withEmail: 0,
+    withoutEmail: 0,
+    novos: 0,
+    atualizados: 0,
+    semAlteracao: 0,
+  });
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [clearDatabase, setClearDatabase] = useState(true);
 
 
   const normalizeName = (name: string) => {
@@ -289,12 +293,50 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
 
       setPreviewData(mappedData);
-      
+
       const withEmail = mappedData.filter(c => c.email).length;
+
+      // Compare against the existing base: never delete, only insert/update
+      const { data: existentes } = await supabase.from("candidatos").select("*");
+      const byReferral = new Map<string, any>();
+      const byNome = new Map<string, any>();
+      (existentes ?? []).forEach((row: any) => {
+        if (row.referral_id) byReferral.set(String(row.referral_id), row);
+        if (row.nome_normalizado) byNome.set(String(row.nome_normalizado), row);
+      });
+
+      let novos = 0;
+      let atualizados = 0;
+      let semAlteracao = 0;
+
+      mappedData.forEach((c) => {
+        const existing =
+          (c.referral_id && byReferral.get(String(c.referral_id))) ||
+          byNome.get(c.nome_normalizado);
+
+        if (!existing) {
+          novos += 1;
+          return;
+        }
+
+        const changed = Object.keys(c).some((key) => {
+          if (key === "status") return false;
+          const next = (c as any)[key];
+          if (next === null || next === undefined || next === "") return false;
+          return String(next) !== String(existing[key] ?? "");
+        });
+
+        if (changed) atualizados += 1;
+        else semAlteracao += 1;
+      });
+
       setStats({
         total: mappedData.length,
         withEmail,
-        withoutEmail: mappedData.length - withEmail
+        withoutEmail: mappedData.length - withEmail,
+        novos,
+        atualizados,
+        semAlteracao,
       });
 
     } catch (error) {
@@ -311,23 +353,33 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
     setIsUploading(true);
 
     try {
-      if (clearDatabase) {
-        // Delete candidates that are not users (to avoid breaking auth)
-        // or just clear all if the admin understands the consequence.
-        // For safety in this specific flow, we delete all candidates.
-        const { error: deleteError } = await supabase
-          .from("candidatos")
-          .delete()
-          .neq("status", "non_existent_status"); // Delete all rows
-        
-        if (deleteError) throw deleteError;
-        toast.info("Base de dados limpa com sucesso.");
-      }
+      // Never delete: keep existing candidates and their current status
+      const { data: existentes } = await supabase
+        .from("candidatos")
+        .select("referral_id, nome_normalizado");
+
+      const existingReferrals = new Set(
+        (existentes ?? []).map((r: any) => String(r.referral_id ?? "")).filter(Boolean),
+      );
+      const existingNomes = new Set(
+        (existentes ?? []).map((r: any) => String(r.nome_normalizado ?? "")).filter(Boolean),
+      );
+
+      const rowsToUpsert = previewData.map((c) => {
+        const alreadyExists =
+          (c.referral_id && existingReferrals.has(String(c.referral_id))) ||
+          existingNomes.has(c.nome_normalizado);
+
+        if (!alreadyExists) return c;
+        const { status, ...rest } = c;
+        return rest;
+      });
+
 
       // Process in chunks to avoid timeout
       const chunkSize = 50;
-      for (let i = 0; i < previewData.length; i += chunkSize) {
-        const chunk = previewData.slice(i, i + chunkSize);
+      for (let i = 0; i < rowsToUpsert.length; i += chunkSize) {
+        const chunk = rowsToUpsert.slice(i, i + chunkSize);
         
         // Separate those with referral_id and those without
         const withReferral = chunk.filter(c => c.referral_id);
@@ -413,19 +465,25 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <Checkbox 
-                  id="clear-db" 
-                  checked={clearDatabase} 
-                  onCheckedChange={(checked) => setClearDatabase(checked === true)}
-                />
-                <Label 
-                  htmlFor="clear-db" 
-                  className="text-sm font-medium text-slate-700 cursor-pointer"
-                >
-                  Limpar base de candidatos antes de importar (Recomendado)
-                </Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-emerald-50 p-4 rounded-lg">
+                  <p className="text-xs text-emerald-600 font-medium uppercase">Novos</p>
+                  <p className="text-2xl font-bold text-emerald-900">{stats.novos}</p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-xs text-blue-600 font-medium uppercase">Atualizados</p>
+                  <p className="text-2xl font-bold text-blue-900">{stats.atualizados}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-lg">
+                  <p className="text-xs text-slate-500 font-medium uppercase">Sem alteração</p>
+                  <p className="text-2xl font-bold text-slate-700">{stats.semAlteracao}</p>
+                </div>
               </div>
+
+              <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                A importação nunca apaga candidatos. Quem já existe é atualizado (mantendo o status
+                atual) e quem não está na planilha permanece como está.
+              </p>
 
               <div>
 

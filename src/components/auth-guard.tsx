@@ -22,8 +22,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id)
-          .single();
-        
+          .maybeSingle();
+
         if (!error && data) {
           setRole(data.role);
         }
@@ -43,24 +43,23 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (!checkingRole && user) {
-      const isAdminRoute = location.pathname.startsWith("/admin");
-      const isDashboardRoute = location.pathname.startsWith("/dashboard");
+  const isAdminRoute = location.pathname.startsWith("/admin");
+  const isConsultorRoute = location.pathname.startsWith("/consultor");
 
-      if (isAdminRoute && role !== "admin") {
-        navigate({ to: "/dashboard" });
-      } else if (isDashboardRoute && role === "admin") {
-        // Allow admin to see dashboard if they want, but usually redirect to admin
-        // navigate({ to: "/admin" });
-      }
+  useEffect(() => {
+    if (checkingRole || !user) return;
+
+    if (isAdminRoute && role !== "admin") {
+      navigate({ to: role === "consultor" ? "/consultor" : "/dashboard" });
+    } else if (isConsultorRoute && role !== "consultor" && role !== "admin") {
+      navigate({ to: "/dashboard" });
     }
-  }, [role, checkingRole, user, location.pathname, navigate]);
+  }, [role, checkingRole, user, isAdminRoute, isConsultorRoute, navigate]);
 
   if (loading || checkingRole) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
       </div>
     );
   }
@@ -69,12 +68,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  // Final gate check to prevent flicker before redirect
-  const isAdminRoute = location.pathname.startsWith("/admin");
-  if (isAdminRoute && role !== "admin") {
-    return null;
-  }
+  if (isAdminRoute && role !== "admin") return null;
+  if (isConsultorRoute && role !== "consultor" && role !== "admin") return null;
 
   return <>{children}</>;
 }
-
