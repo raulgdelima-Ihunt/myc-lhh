@@ -380,8 +380,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       // Process in chunks to avoid timeout
       const chunkSize = 50;
-      for (let i = 0; i < previewData.length; i += chunkSize) {
-        const chunk = previewData.slice(i, i + chunkSize);
+      for (let i = 0; i < rowsToUpsert.length; i += chunkSize) {
+        const chunk = rowsToUpsert.slice(i, i + chunkSize);
         
         // Separate those with referral_id and those without
         const withReferral = chunk.filter(c => c.referral_id);
