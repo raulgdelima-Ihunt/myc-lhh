@@ -270,11 +270,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             } 
           }
 
-          // Step 3: Partial Match (First 2 words)
+          // Step 3: Partial Match (First 2 words, accent-insensitive)
           if (!vinculado && normNomePlanilha) {
             const firstTwoWords = normNomePlanilha.split(' ').slice(0, 2).join(' ');
             if (firstTwoWords.length > 5) {
-              const match = candidatesList.find(c => c.nome_normalizado.startsWith(firstTwoWords));
+              const match = candidatesList.find(c => c.matchKey.startsWith(firstTwoWords));
               if (match) {
                 candidatoId = match.id;
                 vinculado = true;
