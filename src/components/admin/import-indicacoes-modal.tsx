@@ -223,7 +223,12 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxReferral = getCol(["referral"]);
         const idxNome = getCol(["nome", "cliente", "assessorado"]);
         const idxOrigem = getCol(["origem"]);
-        const idxLink = getCol(["link"]);
+        // "LINK VAGA" — never confuse it with a "Linkedin" column
+        const idxLink = (() => {
+          const exact = headerRow.findIndex(h => h.includes("link vaga") || h.includes("link da vaga"));
+          if (exact !== -1) return exact;
+          return headerRow.findIndex(h => h.includes("link") && !h.includes("linkedin"));
+        })();
         const idxLinkedin = getCol(["linkedin_candidato", "linkedin"]);
         const idxDataAcao = getCol(["data ação", "data acao", "data"]);
         const idxDataRetorno = getCol(["data retorno"]);
