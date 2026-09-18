@@ -147,6 +147,14 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         });
       };
 
+      // Exact header match (used when similar headers exist, e.g. "Status" vs "Status DTE")
+      const getExactColumnIndex = (patterns: string[]) => {
+        return headers.findIndex((h) => {
+          const lowerH = h.trim().toLowerCase();
+          return patterns.some(p => lowerH === p.trim().toLowerCase());
+        });
+      };
+
       // Detect Format
       const isNewFormat = getColumnIndex(["REFERRAL"]) !== -1 && getColumnIndex(["NOME"]) !== -1;
 
