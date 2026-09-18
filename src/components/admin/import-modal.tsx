@@ -295,12 +295,50 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
 
       setPreviewData(mappedData);
-      
+
       const withEmail = mappedData.filter(c => c.email).length;
+
+      // Compare against the existing base: never delete, only insert/update
+      const { data: existentes } = await supabase.from("candidatos").select("*");
+      const byReferral = new Map<string, any>();
+      const byNome = new Map<string, any>();
+      (existentes ?? []).forEach((row: any) => {
+        if (row.referral_id) byReferral.set(String(row.referral_id), row);
+        if (row.nome_normalizado) byNome.set(String(row.nome_normalizado), row);
+      });
+
+      let novos = 0;
+      let atualizados = 0;
+      let semAlteracao = 0;
+
+      mappedData.forEach((c) => {
+        const existing =
+          (c.referral_id && byReferral.get(String(c.referral_id))) ||
+          byNome.get(c.nome_normalizado);
+
+        if (!existing) {
+          novos += 1;
+          return;
+        }
+
+        const changed = Object.keys(c).some((key) => {
+          if (key === "status") return false;
+          const next = (c as any)[key];
+          if (next === null || next === undefined || next === "") return false;
+          return String(next) !== String(existing[key] ?? "");
+        });
+
+        if (changed) atualizados += 1;
+        else semAlteracao += 1;
+      });
+
       setStats({
         total: mappedData.length,
         withEmail,
-        withoutEmail: mappedData.length - withEmail
+        withoutEmail: mappedData.length - withEmail,
+        novos,
+        atualizados,
+        semAlteracao,
       });
 
     } catch (error) {
