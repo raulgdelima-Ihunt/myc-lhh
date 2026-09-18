@@ -277,7 +277,9 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           referral_id: valReferral,
           nome: rawNome.replace(/\([^)]*\)/g, "").trim(),
           nome_normalizado: normalizeName(rawNome),
-          email: idxEmail !== -1 ? filterPlaceholder(row[idxEmail]) : null,
+          email: idxEmail !== -1
+            ? filterPlaceholder(row[idxEmail])?.toLowerCase().trim() ?? null
+            : null,
           telefone: idxTelefone !== -1 ? filterPlaceholder(row[idxTelefone]) : null,
           consultor_responsavel: idxConsultor !== -1 ? filterPlaceholder(row[idxConsultor]) : null,
           distribuicao: idxDistribuicao !== -1 ? filterPlaceholder(row[idxDistribuicao]) : null,
