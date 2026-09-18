@@ -467,19 +467,25 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <Checkbox 
-                  id="clear-db" 
-                  checked={clearDatabase} 
-                  onCheckedChange={(checked) => setClearDatabase(checked === true)}
-                />
-                <Label 
-                  htmlFor="clear-db" 
-                  className="text-sm font-medium text-slate-700 cursor-pointer"
-                >
-                  Limpar base de candidatos antes de importar (Recomendado)
-                </Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-emerald-50 p-4 rounded-lg">
+                  <p className="text-xs text-emerald-600 font-medium uppercase">Novos</p>
+                  <p className="text-2xl font-bold text-emerald-900">{stats.novos}</p>
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-xs text-blue-600 font-medium uppercase">Atualizados</p>
+                  <p className="text-2xl font-bold text-blue-900">{stats.atualizados}</p>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-lg">
+                  <p className="text-xs text-slate-500 font-medium uppercase">Sem alteração</p>
+                  <p className="text-2xl font-bold text-slate-700">{stats.semAlteracao}</p>
+                </div>
               </div>
+
+              <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                A importação nunca apaga candidatos. Quem já existe é atualizado (mantendo o status
+                atual) e quem não está na planilha permanece como está.
+              </p>
 
               <div>
 
