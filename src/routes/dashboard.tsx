@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getStatusMeta, isStatusEncerrado } from "@/lib/candidato-status";
 
 const DEFAULT_ACTION_DATE = "1900-01-01";
 
@@ -187,6 +188,21 @@ function DashboardPage() {
             </div>
           ) : (
             <>
+              {isStatusEncerrado(data?.candidato.status) && (
+                <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+                  <h3 className="text-sm font-bold text-amber-900">
+                    {data?.candidato.status === "declinado"
+                      ? "Programa cancelado"
+                      : "Programa encerrado"}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-amber-800">
+                    Seu programa não está mais ativo ({getStatusMeta(data?.candidato.status).label}).
+                    Você continua com acesso ao histórico das suas indicações. Para retomar o
+                    acompanhamento, fale com seu consultor.
+                  </p>
+                </div>
+              )}
+
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-[#333333]">Olá, {data?.candidato.nome}</h2>
                 <p className="text-[#666666]">Aqui você acompanha o progresso de suas indicações em tempo real.</p>

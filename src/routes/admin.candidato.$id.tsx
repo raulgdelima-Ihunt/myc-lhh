@@ -1,12 +1,29 @@
-import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGuard } from "@/components/auth-guard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ArrowLeft, CheckCircle, Briefcase, KeyRound } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, ArrowLeft, CheckCircle, Briefcase, KeyRound, Pencil, Trash2 } from "lucide-react";
 import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
 import { createCandidateAccess, getCandidateAccessStatus, resetCandidatePassword } from "@/lib/auth.functions";
+import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
 import { toast } from "sonner";
 
 const DEFAULT_ACTION_DATE = "1900-01-01";
@@ -58,9 +75,74 @@ function CandidatoDetail() {
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [passwordAction, setPasswordAction] = useState<"created" | "reset">("created");
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
+  const [editingIndicacao, setEditingIndicacao] = useState<any | null>(null);
+  const [isSavingIndicacao, setIsSavingIndicacao] = useState(false);
+  const [deletingIndicacaoId, setDeletingIndicacaoId] = useState<string | null>(null);
 
-  const { data: candidato, isLoading: isLoadingCandidato } = useCandidato(id);
-  const { data: indicacoes, isLoading: isLoadingIndicacoes } = useCandidatoIndicacoes(id);
+  const { data: candidato, isLoading: isLoadingCandidato, refetch: refetchCandidato } = useCandidato(id);
+  const { data: indicacoes, isLoading: isLoadingIndicacoes, refetch: refetchIndicacoes } = useCandidatoIndicacoes(id);
+
+  const handleStatusChange = async (nextStatus: string) => {
+    setIsSavingStatus(true);
+    const { error } = await supabase
+      .from("candidatos")
+      .update({ status: nextStatus })
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Não foi possível alterar o status: " + error.message);
+    } else {
+      toast.success("Status atualizado.");
+      await refetchCandidato();
+    }
+    setIsSavingStatus(false);
+  };
+
+  const handleSaveIndicacao = async () => {
+    if (!editingIndicacao) return;
+    if (!editingIndicacao.vaga?.trim() || !editingIndicacao.empresa?.trim()) {
+      toast.error("Vaga e empresa são obrigatórias.");
+      return;
+    }
+
+    setIsSavingIndicacao(true);
+    const { error } = await supabase
+      .from("indicacoes")
+      .update({
+        vaga: editingIndicacao.vaga.trim(),
+        empresa: editingIndicacao.empresa.trim(),
+        data_acao: editingIndicacao.data_acao || DEFAULT_ACTION_DATE,
+        resultado: editingIndicacao.resultado || null,
+        jobhunter: editingIndicacao.jobhunter || null,
+        vaga_link: editingIndicacao.vaga_link || null,
+      })
+      .eq("id", editingIndicacao.id);
+
+    if (error) {
+      toast.error("Não foi possível salvar: " + error.message);
+    } else {
+      toast.success("Indicação atualizada.");
+      setEditingIndicacao(null);
+      await refetchIndicacoes();
+    }
+    setIsSavingIndicacao(false);
+  };
+
+  const handleDeleteIndicacao = async (indicacaoId: string) => {
+    if (!window.confirm("Excluir esta indicação? Esta ação não pode ser desfeita.")) return;
+
+    setDeletingIndicacaoId(indicacaoId);
+    const { error } = await supabase.from("indicacoes").delete().eq("id", indicacaoId);
+
+    if (error) {
+      toast.error("Não foi possível excluir: " + error.message);
+    } else {
+      toast.success("Indicação excluída.");
+      await refetchIndicacoes();
+    }
+    setDeletingIndicacaoId(null);
+  };
 
   useEffect(() => {
     let active = true;
@@ -181,6 +263,39 @@ function CandidatoDetail() {
                         ID: {(candidato as any).referral_id}
                       </span>
                     )}
+                  </div>
+
+                  <div className="mt-5 space-y-1.5">
+                    <Label className="text-xs font-semibold uppercase tracking-wide text-[#666666]">
+                      Status do candidato
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Select
+                        value={getStatusMeta(candidato?.status).value || undefined}
+                        onValueChange={handleStatusChange}
+                        disabled={isSavingStatus}
+                      >
+                        <SelectTrigger className="w-[240px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CANDIDATO_STATUS_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${getStatusMeta(candidato?.status).badgeClass}`}
+                      >
+                        {getStatusMeta(candidato?.status).label}
+                      </span>
+                      {isSavingStatus && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                    </div>
+                    <p className="text-xs text-[#666666]">
+                      {getStatusMeta(candidato?.status).description}
+                    </p>
                   </div>
                 </div>
 
@@ -313,6 +428,7 @@ function CandidatoDetail() {
                         <th className="px-6 py-4 text-center">Data</th>
                         <th className="px-6 py-4">Resultado</th>
                         <th className="px-6 py-4">Jobhunter</th>
+                        <th className="px-6 py-4 text-right">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -331,6 +447,33 @@ function CandidatoDetail() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-[#666666] italic font-medium">{i.jobhunter}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Editar indicação"
+                                onClick={() => setEditingIndicacao({ ...i })}
+                              >
+                                <Pencil size={16} className="text-primary" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Excluir indicação"
+                                disabled={deletingIndicacaoId === i.id}
+                                onClick={() => handleDeleteIndicacao(i.id)}
+                              >
+                                {deletingIndicacaoId === i.id ? (
+                                  <Loader2 size={16} className="animate-spin text-[#666666]" />
+                                ) : (
+                                  <Trash2 size={16} className="text-[#E91E63]" />
+                                )}
+                              </Button>
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -349,6 +492,82 @@ function CandidatoDetail() {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!editingIndicacao} onOpenChange={(open) => !open && setEditingIndicacao(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar indicação</DialogTitle>
+          </DialogHeader>
+
+          {editingIndicacao && (
+            <div className="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="edit-vaga">Vaga</Label>
+                <Input
+                  id="edit-vaga"
+                  value={editingIndicacao.vaga ?? ""}
+                  onChange={(e) => setEditingIndicacao({ ...editingIndicacao, vaga: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-empresa">Empresa</Label>
+                <Input
+                  id="edit-empresa"
+                  value={editingIndicacao.empresa ?? ""}
+                  onChange={(e) => setEditingIndicacao({ ...editingIndicacao, empresa: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-data">Data da ação</Label>
+                <Input
+                  id="edit-data"
+                  type="date"
+                  value={
+                    editingIndicacao.data_acao && editingIndicacao.data_acao !== DEFAULT_ACTION_DATE
+                      ? editingIndicacao.data_acao
+                      : ""
+                  }
+                  onChange={(e) => setEditingIndicacao({ ...editingIndicacao, data_acao: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-resultado">Resultado</Label>
+                <Input
+                  id="edit-resultado"
+                  value={editingIndicacao.resultado ?? ""}
+                  onChange={(e) => setEditingIndicacao({ ...editingIndicacao, resultado: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-jobhunter">Jobhunter</Label>
+                <Input
+                  id="edit-jobhunter"
+                  value={editingIndicacao.jobhunter ?? ""}
+                  onChange={(e) => setEditingIndicacao({ ...editingIndicacao, jobhunter: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="edit-link">Link da vaga</Label>
+                <Input
+                  id="edit-link"
+                  value={editingIndicacao.vaga_link ?? ""}
+                  onChange={(e) => setEditingIndicacao({ ...editingIndicacao, vaga_link: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingIndicacao(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveIndicacao} disabled={isSavingIndicacao}>
+              {isSavingIndicacao && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AuthGuard>
   );
 }

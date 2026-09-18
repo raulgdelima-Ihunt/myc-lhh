@@ -41,11 +41,17 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
     totalBeforeFilter: number;
     totalAfterFilter: number;
   } | null>(null);
-  const [stats, setStats] = useState({ total: 0, withEmail: 0, withoutEmail: 0 });
+  const [stats, setStats] = useState({
+    total: 0,
+    withEmail: 0,
+    withoutEmail: 0,
+    novos: 0,
+    atualizados: 0,
+    semAlteracao: 0,
+  });
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [clearDatabase, setClearDatabase] = useState(true);
 
 
   const normalizeName = (name: string) => {

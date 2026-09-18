@@ -11,9 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ConsultorRouteImport } from './routes/consultor'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as ConsultorIndexRouteImport } from './routes/consultor.index'
 import { Route as AdminCandidatoIdRouteImport } from './routes/admin.candidato.$id'
+import { Route as ConsultorCandidatoIdRouteImport } from './routes/consultor.candidato.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsultorRoute = ConsultorRouteImport.update({
+  id: '/consultor',
+  path: '/consultor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -35,50 +43,86 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ConsultorIndexRoute = ConsultorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ConsultorRoute,
+} as any)
 const AdminCandidatoIdRoute = AdminCandidatoIdRouteImport.update({
   id: '/candidato/$id',
   path: '/candidato/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const ConsultorCandidatoIdRoute = ConsultorCandidatoIdRouteImport.update({
+  id: '/candidato/$id',
+  path: '/candidato/$id',
+  getParentRoute: () => ConsultorRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/consultor': typeof ConsultorRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/admin/': typeof AdminIndexRoute
+  '/consultor/': typeof ConsultorIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
+  '/consultor/candidato/$id': typeof ConsultorCandidatoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/admin': typeof AdminIndexRoute
+  '/consultor': typeof ConsultorIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
+  '/consultor/candidato/$id': typeof ConsultorCandidatoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/consultor': typeof ConsultorRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/admin/': typeof AdminIndexRoute
+  '/consultor/': typeof ConsultorIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
+  '/consultor/candidato/$id': typeof ConsultorCandidatoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/dashboard' | '/admin/' | '/admin/candidato/$id'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/consultor'
+    | '/dashboard'
+    | '/admin/'
+    | '/consultor/'
+    | '/admin/candidato/$id'
+    | '/consultor/candidato/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/admin' | '/admin/candidato/$id'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/admin'
+    | '/consultor'
+    | '/admin/candidato/$id'
+    | '/consultor/candidato/$id'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/consultor'
     | '/dashboard'
     | '/admin/'
+    | '/consultor/'
     | '/admin/candidato/$id'
+    | '/consultor/candidato/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  ConsultorRoute: typeof ConsultorRouteWithChildren
   DashboardRoute: typeof DashboardRoute
 }
 
@@ -98,6 +142,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/consultor': {
+      id: '/consultor'
+      path: '/consultor'
+      fullPath: '/consultor'
+      preLoaderRoute: typeof ConsultorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -112,12 +163,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/consultor/': {
+      id: '/consultor/'
+      path: '/'
+      fullPath: '/consultor/'
+      preLoaderRoute: typeof ConsultorIndexRouteImport
+      parentRoute: typeof ConsultorRoute
+    }
     '/admin/candidato/$id': {
       id: '/admin/candidato/$id'
       path: '/candidato/$id'
       fullPath: '/admin/candidato/$id'
       preLoaderRoute: typeof AdminCandidatoIdRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/consultor/candidato/$id': {
+      id: '/consultor/candidato/$id'
+      path: '/candidato/$id'
+      fullPath: '/consultor/candidato/$id'
+      preLoaderRoute: typeof ConsultorCandidatoIdRouteImport
+      parentRoute: typeof ConsultorRoute
     }
   }
 }
@@ -134,9 +199,24 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ConsultorRouteChildren {
+  ConsultorIndexRoute: typeof ConsultorIndexRoute
+  ConsultorCandidatoIdRoute: typeof ConsultorCandidatoIdRoute
+}
+
+const ConsultorRouteChildren: ConsultorRouteChildren = {
+  ConsultorIndexRoute: ConsultorIndexRoute,
+  ConsultorCandidatoIdRoute: ConsultorCandidatoIdRoute,
+}
+
+const ConsultorRouteWithChildren = ConsultorRoute._addFileChildren(
+  ConsultorRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  ConsultorRoute: ConsultorRouteWithChildren,
   DashboardRoute: DashboardRoute,
 }
 export const routeTree = rootRouteImport
