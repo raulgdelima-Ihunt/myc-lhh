@@ -147,6 +147,14 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         });
       };
 
+      // Exact header match (used when similar headers exist, e.g. "Status" vs "Status DTE")
+      const getExactColumnIndex = (patterns: string[]) => {
+        return headers.findIndex((h) => {
+          const lowerH = h.trim().toLowerCase();
+          return patterns.some(p => lowerH === p.trim().toLowerCase());
+        });
+      };
+
       // Detect Format
       const isNewFormat = getColumnIndex(["REFERRAL"]) !== -1 && getColumnIndex(["NOME"]) !== -1;
 
@@ -163,7 +171,27 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxLinkedin = getColumnIndex(["LINKEDIN"]);
       const idxInicio = getColumnIndex(["INÍCIO"]);
       const idxTermino = getColumnIndex(["TÉRMINO"]);
-      const idxStatusProg = getColumnIndex(["STATUS PROGRAMA"]);
+      const idxStatusProg =
+        getColumnIndex(["STATUS PROGRAMA", "STATUS PROG"]) !== -1
+          ? getColumnIndex(["STATUS PROGRAMA", "STATUS PROG"])
+          : getExactColumnIndex(["STATUS"]);
+      const idxPrograma = getExactColumnIndex(["PROGRAMA"]);
+      const idxStatusDte = getColumnIndex(["STATUS DTE"]);
+      const idxStatusOrbit = getColumnIndex(["STATUS ORBIT"]);
+      const idxDataCvDte = getColumnIndex(["DATA DE CV DTE", "DATA CV DTE"]);
+      const idxSituacaoDte = getExactColumnIndex(["SITUAÇÃO DTE", "SITUACAO DTE"]);
+      const idxComplementoSituacaoDte = getColumnIndex(["COMPLEMENTO SITUAÇÃO DTE", "COMPLEMENTO SITUACAO DTE"]);
+      const idxTalent = getExactColumnIndex(["TALENT"]);
+      const idxForms = getColumnIndex(["FORMS PREENCHIDO"]);
+      const idxIdioma = getExactColumnIndex(["IDIOMA"]);
+      const idxNomeCompleto = getColumnIndex(["NOME COMPLETO"]);
+      const idxEmailContato = getColumnIndex(["E-MAIL PARA CONTATO", "EMAIL PARA CONTATO"]);
+      const idxEmpresasRestritas = getColumnIndex(["EMPRESAS RESTRITAS"]);
+      const idxFaixaSalarial = getColumnIndex(["FAIXA SALARIAL"]);
+      const idxCarta = getColumnIndex(["CARTA DE APRESENTAÇÃO", "CARTA DE APRESENTACAO"]);
+      const idxLgpd = getColumnIndex(["LGPD"]);
+      const idxPcd = getExactColumnIndex(["PCD", "PCD?"]);
+      const idxDescricaoPcd = getColumnIndex(["DESCRIÇÃO PCD", "DESCRICAO PCD"]);
       const idxUltimaPos = getColumnIndex(["ÚLTIMA POSIÇÃO"]);
       const idxPosicoesAlvo = getColumnIndex(["POSIÇÕES ALVO", "CARGOS DE INTERESSE"]);
       const idxUltimoSeg = getColumnIndex(["ÚLTIMO SEGMENTO"]);
@@ -274,6 +302,23 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           link_relatorio: idxLinkRelatorio !== -1 ? filterPlaceholder(row[idxLinkRelatorio]) : null,
           cv_candidato: idxCVCandidato !== -1 ? filterPlaceholder(row[idxCVCandidato]) : null,
           reuniao_status: idxReuniao !== -1 ? filterPlaceholder(row[idxReuniao]) : null,
+          programa: idxPrograma !== -1 ? filterPlaceholder(row[idxPrograma]) : null,
+          status_dte: idxStatusDte !== -1 ? filterPlaceholder(row[idxStatusDte]) : null,
+          status_orbit: idxStatusOrbit !== -1 ? filterPlaceholder(row[idxStatusOrbit]) : null,
+          data_cv_dte: idxDataCvDte !== -1 ? parseDate(row[idxDataCvDte]) : null,
+          situacao_dte: idxSituacaoDte !== -1 ? filterPlaceholder(row[idxSituacaoDte]) : null,
+          complemento_situacao_dte: idxComplementoSituacaoDte !== -1 ? filterPlaceholder(row[idxComplementoSituacaoDte]) : null,
+          talent: idxTalent !== -1 ? filterPlaceholder(row[idxTalent]) : null,
+          forms_preenchido: idxForms !== -1 ? filterPlaceholder(row[idxForms]) : null,
+          idioma: idxIdioma !== -1 ? filterPlaceholder(row[idxIdioma]) : null,
+          nome_completo: idxNomeCompleto !== -1 ? filterPlaceholder(row[idxNomeCompleto]) : null,
+          email_contato: idxEmailContato !== -1 ? filterPlaceholder(row[idxEmailContato]) : null,
+          empresas_restritas: idxEmpresasRestritas !== -1 ? filterPlaceholder(row[idxEmpresasRestritas]) : null,
+          faixa_salarial: idxFaixaSalarial !== -1 ? filterPlaceholder(row[idxFaixaSalarial]) : null,
+          carta_apresentacao: idxCarta !== -1 ? filterPlaceholder(row[idxCarta]) : null,
+          lgpd: idxLgpd !== -1 ? filterPlaceholder(row[idxLgpd]) : null,
+          pcd: idxPcd !== -1 ? filterPlaceholder(row[idxPcd]) : null,
+          descricao_pcd: idxDescricaoPcd !== -1 ? filterPlaceholder(row[idxDescricaoPcd]) : null,
           parceiro: idxParceiro !== -1 ? String(row[idxParceiro] || "").trim() : "LHH",
           status: "ativo",
         };
