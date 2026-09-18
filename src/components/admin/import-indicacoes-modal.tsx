@@ -615,22 +615,12 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                               <div className={`text-[11px] font-medium flex items-center gap-1 ${row.importStatus === "existing" ? "text-gray-500" : "text-green-700"}`}>
                                 <UserPlus size={12} /> {row.importStatus === "existing" ? "Já existente" : "Nova indicação"}
                               </div>
+                            ) : row.manual_ignore ? (
+                              <span className="text-[11px] font-medium text-gray-500">Ignorado</span>
                             ) : (
-                              <Select 
-                                onValueChange={(val) => handleManualVinculation(i, val)}
-                                value={row.manual_ignore ? "ignore" : (row.candidato_id || "")}
-                              >
-
-                                <SelectTrigger className="h-8 text-xs border-amber-300 bg-amber-50">
-                                  <SelectValue placeholder="Selecione um candidato..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="ignore" className="text-red-600 font-medium">Ignorar (Não é candidato)</SelectItem>
-                                  {row.suggestions?.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>É este: {s.nome}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <span className="text-[11px] font-medium text-amber-700">
+                                Aguardando vinculação acima
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.vaga}</TableCell>
