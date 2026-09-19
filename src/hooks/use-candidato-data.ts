@@ -32,15 +32,20 @@ export const useCandidatoIndicacoes = (candidatoId: string) => {
 };
 
 export const useCandidateDashboard = (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
   return useQuery({
-    queryKey: ["candidate-dashboard", email],
+    queryKey: ["candidate-dashboard", normalizedEmail],
+    enabled: normalizedEmail.length > 0,
     queryFn: async () => {
-      const { data: candidato, error: candError } = await supabase
+      const { data: candidatos, error: candError } = await supabase
         .from("candidatos")
         .select("*")
-        .eq("email", email)
-        .single();
+        .ilike("email", normalizedEmail)
+        .order("created_at", { ascending: false })
+        .limit(1);
       if (candError) throw candError;
+      const candidato = candidatos?.[0];
+      if (!candidato) throw new Error("Candidato não encontrado");
 
       const { data: indicacoes, error: indError } = await supabase
         .from("indicacoes")
