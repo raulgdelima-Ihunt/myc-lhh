@@ -1,0 +1,4 @@
+- Atualizar contagens da carteira do consultor.
+- Melhorar extração de área e nível na importação de candidatos.
+- Renomear Jobhunter para Conector no admin e importar a nova primeira coluna.
+- Trocar o rodapé e adicionar botão de WhatsApp em todas as telas.
