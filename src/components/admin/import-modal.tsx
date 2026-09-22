@@ -55,9 +55,61 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
   const normalizeName = (name: string) => {
     if (!name) return "";
     return name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/\([^)]*\)/g, "") // Remove contents in parentheses
+      .replace(/\s+/g, " ")
       .trim()
       .toLowerCase();
+  };
+
+  const normalizeHeader = (value: string) =>
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+  const inferNivelCargo = (values: unknown[]) => {
+    const text = normalizeHeader(values.filter(Boolean).join(" "));
+    if (!text) return null;
+
+    if (/\b(c[-\s]?level|ceo|cfo|coo|cio|cto|chro|cmo|chief|presidente|vice presidente|vp)\b/.test(text)) {
+      return "C-Level";
+    }
+    if (/\b(diretor|diretora|director|head|superintendente)\b/.test(text)) return "Diretor";
+    if (/\b(gerente|gerencia|manager)\b/.test(text)) return "Gerente";
+    if (/\b(coordenador|coordenadora|coordenacao|coordinator|supervisor)\b/.test(text)) return "Coordenador";
+    return "Especialista";
+  };
+
+  const inferArea = (values: unknown[]) => {
+    const text = normalizeHeader(values.filter(Boolean).join(" "));
+    if (!text) return null;
+
+    const rules: [RegExp, string][] = [
+      [/\b(rh|recursos humanos|gente|people|talentos|talent|dp)\b/, "Recursos Humanos"],
+      [/\b(tecnologia|ti|it|sistemas|software|dados|data|digital|produto)\b/, "Tecnologia"],
+      [/\b(financeiro|financas|controladoria|contabil|contabilidade|tesouraria|fp&a|auditoria)\b/, "Financeiro"],
+      [/\b(comercial|vendas|sales|business development|bd|trade)\b/, "Comercial"],
+      [/\b(marketing|marca|branding|comunicacao|growth)\b/, "Marketing"],
+      [/\b(operacoes|operacional|operations|industrial|manufatura|producao)\b/, "Operações"],
+      [/\b(juridico|legal|compliance|regulatorio)\b/, "Jurídico"],
+      [/\b(supply|logistica|logistics|compras|procurement|suprimentos)\b/, "Supply Chain"],
+      [/\b(engenharia|engineering|qualidade|quality|hse|ehs)\b/, "Engenharia"],
+      [/\b(projetos|pmO|project)\b/, "Projetos"],
+      [/\b(atendimento|customer|cliente|cs|sucesso do cliente)\b/, "Atendimento"],
+      [/\b(administrativo|administracao|facilities)\b/, "Administrativo"],
+    ];
+
+    return rules.find(([pattern]) => pattern.test(text))?.[1] ?? null;
+  };
+
+  const stripEmptyUpdateValues = (row: Record<string, any>) => {
+    return Object.fromEntries(
+      Object.entries(row).filter(([, value]) => value !== null && value !== undefined && value !== ""),
+    );
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,19 +192,20 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const dataRows = finalJsonData.slice(foundHeaderRow + 1);
 
       // Mapping logic
+      const normalizedHeaders = headers.map(normalizeHeader);
+
       const getColumnIndex = (patterns: string[]) => {
+        const normalizedPatterns = patterns.map(normalizeHeader);
         return headers.findIndex((h) => {
-          const lowerH = h.toLowerCase();
-          return patterns.some(p => lowerH.includes(p.toLowerCase()));
+          const lowerH = normalizeHeader(h);
+          return normalizedPatterns.some(p => lowerH.includes(p));
         });
       };
 
       // Exact header match (used when similar headers exist, e.g. "Status" vs "Status DTE")
       const getExactColumnIndex = (patterns: string[]) => {
-        return headers.findIndex((h) => {
-          const lowerH = h.trim().toLowerCase();
-          return patterns.some(p => lowerH === p.trim().toLowerCase());
-        });
+        const normalizedPatterns = patterns.map(normalizeHeader);
+        return normalizedHeaders.findIndex((lowerH) => normalizedPatterns.some(p => lowerH === p));
       };
 
       // Detect Format
@@ -204,8 +257,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxEmpresasAlvo = getColumnIndex(["EMPRESAS ALVO"]);
       const idxObservacao = getColumnIndex(["PERFIL CANDIDATO", "OBSERVAÇÃO"]);
       const idxIdade = getColumnIndex(["IDADE"]);
-      const idxArea = getColumnIndex(["ÁREA"]);
-      const idxNivel = getColumnIndex(["NÍVEL DE CARGO"]);
+      const idxArea = getColumnIndex(["ÁREA", "AREA", "ÁREA DE ATUAÇÃO", "AREA DE ATUACAO"]);
+      const idxNivel = getColumnIndex(["NÍVEL DE CARGO", "NIVEL DE CARGO", "SENIORIDADE"]);
       const idxLinkRelatorio = getColumnIndex(["LINK RELATÓRIO"]);
       const idxCVCandidato = getColumnIndex(["CV CANDIDATO"]);
       const idxReuniao = getColumnIndex(["REUNIÃO REALIZADA"]);
@@ -273,6 +326,21 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           if (parceiro !== "LHH") return;
         }
 
+        const areaFromSheet = idxArea !== -1 ? filterPlaceholder(row[idxArea]) : null;
+        const nivelFromSheet = idxNivel !== -1 ? filterPlaceholder(row[idxNivel]) : null;
+        const roleSources = [
+          idxUltimaPos !== -1 ? row[idxUltimaPos] : null,
+          idxPosicoesAlvo !== -1 ? row[idxPosicoesAlvo] : null,
+          idxNomeCompleto !== -1 ? row[idxNomeCompleto] : null,
+        ];
+        const areaSources = [
+          areaFromSheet,
+          idxUltimaPos !== -1 ? row[idxUltimaPos] : null,
+          idxPosicoesAlvo !== -1 ? row[idxPosicoesAlvo] : null,
+          idxUltimoSeg !== -1 ? row[idxUltimoSeg] : null,
+          idxSegmentoAlvo !== -1 ? row[idxSegmentoAlvo] : null,
+        ];
+
         const candidate = {
           referral_id: valReferral,
           nome: rawNome.replace(/\([^)]*\)/g, "").trim(),
@@ -299,8 +367,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           empresas_alvo: idxEmpresasAlvo !== -1 ? filterPlaceholder(row[idxEmpresasAlvo]) : null,
           observacao: idxObservacao !== -1 ? filterPlaceholder(row[idxObservacao]) : null,
           idade: idxIdade !== -1 ? filterPlaceholder(row[idxIdade]) : null,
-          area: idxArea !== -1 ? filterPlaceholder(row[idxArea]) : null,
-          nivel_cargo: idxNivel !== -1 ? filterPlaceholder(row[idxNivel]) : null,
+          area: areaFromSheet || inferArea(areaSources),
+          nivel_cargo: nivelFromSheet || inferNivelCargo(roleSources),
           link_relatorio: idxLinkRelatorio !== -1 ? filterPlaceholder(row[idxLinkRelatorio]) : null,
           cv_candidato: idxCVCandidato !== -1 ? filterPlaceholder(row[idxCVCandidato]) : null,
           reuniao_status: idxReuniao !== -1 ? filterPlaceholder(row[idxReuniao]) : null,
@@ -433,7 +501,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         if (existingId) {
           // Preserve the status already set in the portal
           const { status, ...rest } = c;
-          toUpdate.push({ id: existingId, row: rest });
+          toUpdate.push({ id: existingId, row: stripEmptyUpdateValues(rest) });
         } else {
           toInsert.push(c);
         }

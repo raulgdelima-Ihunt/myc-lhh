@@ -37,8 +37,11 @@ export const Route = createFileRoute("/admin/candidato/$id")({
   head: () => ({
     meta: [
       { title: "Detalhe do Candidato | MyCareer by LHH" },
+      { name: "description", content: "Detalhes administrativos do candidato e histórico de indicações." },
       { property: "og:title", content: "Detalhe do Candidato | MyCareer by LHH" },
-      { property: "og:image", content: "/logo.svg" },
+      { property: "og:description", content: "Detalhes administrativos do candidato e histórico de indicações." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: CandidatoDetail,
@@ -427,7 +430,7 @@ function CandidatoDetail() {
                         <th className="px-6 py-4">Empresa</th>
                         <th className="px-6 py-4 text-center">Data</th>
                         <th className="px-6 py-4">Resultado</th>
-                        <th className="px-6 py-4">Jobhunter</th>
+                        <th className="px-6 py-4">Conector</th>
                         <th className="px-6 py-4 text-right">Ações</th>
                       </tr>
                     </thead>
@@ -459,7 +462,7 @@ function CandidatoDetail() {
                               {i.resultado || 'Sem retorno'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-[#666666] italic font-medium">{i.jobhunter}</td>
+                          <td className="px-6 py-4 text-sm text-[#666666] italic font-medium">{i.jobhunter || "-"}</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-end gap-1">
                               <Button
@@ -552,7 +555,7 @@ function CandidatoDetail() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="edit-jobhunter">Jobhunter</Label>
+                <Label htmlFor="edit-jobhunter">Conector</Label>
                 <Input
                   id="edit-jobhunter"
                   value={editingIndicacao.jobhunter ?? ""}

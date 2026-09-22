@@ -221,6 +221,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         processedSheets.push(sheetName);
         
         const idxReferral = getCol(["referral"]);
+        const idxConnector = getCol(["conector", "connector", "jobhunter", "responsável", "responsavel"]);
         const idxNome = getCol(["nome", "cliente", "assessorado"]);
         const idxOrigem = getCol(["origem"]);
         // "LINK VAGA" — never confuse it with a "Linkedin" column
@@ -250,6 +251,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
         for (const row of dataRows) {
           const rawReferral = idxReferral !== -1 ? filterPlaceholder(row[idxReferral]) : null;
+          const rawConnector = idxConnector !== -1 ? filterPlaceholder(row[idxConnector]) : null;
           const rawNome = idxNome !== -1 ? filterPlaceholder(row[idxNome]) : null;
           const rawVaga = idxVaga !== -1 ? filterPlaceholder(row[idxVaga]) : null;
           const rawEmpresa = idxEmpresa !== -1 ? filterPlaceholder(row[idxEmpresa]) : null;
@@ -301,7 +303,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             formato: null, 
             data_acao: idxDataAcao !== -1 ? getActionDateForStorage(parseExcelDate(row[idxDataAcao]) as string | null) : DEFAULT_ACTION_DATE,
             resultado: idxStatus !== -1 ? filterPlaceholder(row[idxStatus]) : null,
-            jobhunter: sheetName,
+            jobhunter: rawConnector || sheetName,
             vinculado,
             suggestions: suggestions.map(s => ({ id: s.id, nome: s.nome })),
             origem: idxOrigem !== -1 ? filterPlaceholder(row[idxOrigem]) : null,
@@ -458,7 +460,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           {!file ? (
             <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12 hover:border-violet-400 transition-colors">
               <Upload className="h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-sm text-gray-600 mb-4">Selecione o arquivo .xlsx com as abas dos Jobhunters</p>
+              <p className="text-sm text-gray-600 mb-4">Selecione o arquivo .xlsx com as indicações dos conectores</p>
               <Input
                 type="file"
                 accept=".xlsx, .xls"

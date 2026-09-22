@@ -12,14 +12,12 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Acompanhe suas indicações de mercado em tempo real. Acesso exclusivo para clientes LHH." },
       { property: "og:title", content: "Portal MyCareer by LHH" },
       { property: "og:description", content: "Acompanhe suas indicações de mercado em tempo real." },
-      { property: "og:image", content: "/logo.svg" },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://myc-lhh.lovable.app" },
       { property: "og:site_name", content: "MyCareer by LHH" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Portal MyCareer by LHH" },
       { name: "twitter:description", content: "Acompanhe suas indicações de mercado em tempo real." },
-      { name: "twitter:image", content: "/logo.svg" },
     ],
   }),
   component: Index,
@@ -299,7 +297,7 @@ function Index() {
 
         <div className="mt-8 border-t border-border pt-6 text-center text-sm text-gray-500">
           <p>Acesso exclusivo para clientes LHH</p>
-          <p className="mt-2 text-xs">© 2026 LHH Recruitment Portal</p>
+          <p className="mt-2 text-xs">@2026 LHH MyCareer Portal</p>
         </div>
       </div>
     </div>

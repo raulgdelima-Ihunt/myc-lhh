@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "sonner";
+import { MessageCircle } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -83,14 +84,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Acompanhe suas indicações de mercado em tempo real. Acesso exclusivo para clientes LHH." },
       { property: "og:title", content: "Portal MyCareer by LHH" },
       { property: "og:description", content: "Acompanhe suas indicações de mercado em tempo real." },
-      { property: "og:image", content: "/logo.svg" },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://myc-lhh.lovable.app" },
       { property: "og:site_name", content: "MyCareer by LHH" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Portal MyCareer by LHH" },
       { name: "twitter:description", content: "Acompanhe suas indicações de mercado em tempo real." },
-      { name: "twitter:image", content: "/logo.svg" },
     ],
     links: [
       {
@@ -142,6 +141,16 @@ function RootComponent() {
       <AuthProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <a
+          href="https://web.whatsapp.com/send?phone=5511962430499&text=Ol%C3%A1%2C%20sou%20cliente%20LHH%20e%20preciso%20de%20ajuda%20com%20o%20Portal."
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Abrir suporte no WhatsApp"
+          title="Suporte via WhatsApp"
+          className="fixed bottom-5 right-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <MessageCircle className="h-7 w-7" />
+        </a>
         <Toaster position="top-right" richColors />
       </AuthProvider>
     </QueryClientProvider>
