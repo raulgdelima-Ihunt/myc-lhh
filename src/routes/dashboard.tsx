@@ -31,7 +31,9 @@ export const Route = createFileRoute("/dashboard")({
       { title: "Meu Dashboard | MyCareer by LHH" },
       { name: "description", content: "Acompanhe suas indicações de mercado em tempo real." },
       { property: "og:title", content: "Meu Dashboard | MyCareer by LHH" },
-      { property: "og:image", content: "/logo.svg" },
+      { property: "og:description", content: "Acompanhe suas indicações de mercado em tempo real." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: DashboardPage,
@@ -360,7 +362,7 @@ function DashboardPage() {
 
         <footer className="bg-white border-t border-gray-100 py-6">
           <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-400">
-            © 2026 LHH Recruitment Portal
+            @2026 LHH MyCareer Portal
           </div>
         </footer>
 
