@@ -5,8 +5,11 @@ export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
       { title: "Administração | MyCareer by LHH" },
+      { name: "description", content: "Área administrativa do Portal MyCareer by LHH." },
       { property: "og:title", content: "Administração | MyCareer by LHH" },
-      { property: "og:image", content: "/logo.svg" },
+      { property: "og:description", content: "Área administrativa do Portal MyCareer by LHH." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AdminLayout,

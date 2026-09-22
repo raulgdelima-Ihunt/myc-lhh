@@ -98,7 +98,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       [/\b(juridico|legal|compliance|regulatorio)\b/, "Jurídico"],
       [/\b(supply|logistica|logistics|compras|procurement|suprimentos)\b/, "Supply Chain"],
       [/\b(engenharia|engineering|qualidade|quality|hse|ehs)\b/, "Engenharia"],
-      [/\b(projetos|pmO|project)\b/, "Projetos"],
+      [/\b(projetos|pmo|project)\b/, "Projetos"],
       [/\b(atendimento|customer|cliente|cs|sucesso do cliente)\b/, "Atendimento"],
       [/\b(administrativo|administracao|facilities)\b/, "Administrativo"],
     ];
