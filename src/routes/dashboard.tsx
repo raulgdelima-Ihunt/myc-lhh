@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { AuthGuard } from "@/components/auth-guard";
-import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink, KeyRound } from "lucide-react";
+import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink, KeyRound, Send, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useCandidateDashboard } from "@/hooks/use-candidato-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
