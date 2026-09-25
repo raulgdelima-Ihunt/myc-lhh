@@ -219,7 +219,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxParceiro = getColumnIndex(["parceiro"]);
 
       // New columns mapping
-      const idxReferral = getColumnIndex(["REFERRAL"]);
+      const idxReferralId = getExactColumnIndex(["REFERRAL ID"]);
+      const idxReferral = idxReferralId !== -1 ? idxReferralId : getColumnIndex(["REFERRAL"]);
       const idxDistribuicao = getColumnIndex(["DISTRIBUIÇÃO"]);
       const idxLinkedin = getColumnIndex(["LINKEDIN"]);
       const idxInicio = getColumnIndex(["INÍCIO"]);
