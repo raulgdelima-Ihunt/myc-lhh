@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { AuthGuard } from "@/components/auth-guard";
-import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink, KeyRound, Send, AlertTriangle } from "lucide-react";
+import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink, KeyRound, Mail, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useCandidateDashboard } from "@/hooks/use-candidato-data";
@@ -52,12 +52,6 @@ function DashboardPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [isReforcoOpen, setIsReforcoOpen] = useState(false);
-  const [reforcoTitulo, setReforcoTitulo] = useState("");
-  const [reforcoEmpresa, setReforcoEmpresa] = useState("");
-  const [reforcoLink, setReforcoLink] = useState("");
-  const [reforcoObs, setReforcoObs] = useState("");
-  const [isSendingReforco, setIsSendingReforco] = useState(false);
-  const [reforcoEnviado, setReforcoEnviado] = useState(false);
 
   const { data, isLoading, error } = useCandidateDashboard(user?.email || "");
 
@@ -74,33 +68,7 @@ function DashboardPage() {
     },
   });
 
-  const handleEnviarReforco = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!data?.candidato.id) return;
-    setIsSendingReforco(true);
-    const { error: insertError } = await supabase.from("solicitacoes_reforco").insert({
-      candidato_id: data.candidato.id,
-      titulo_vaga: reforcoTitulo.trim(),
-      empresa: reforcoEmpresa.trim(),
-      link_vaga: reforcoLink.trim() || null,
-      observacoes: reforcoObs.trim() || null,
-    });
-    setIsSendingReforco(false);
-    if (insertError) {
-      toast.error("Não foi possível registrar a solicitação. Tente novamente.");
-      return;
-    }
-    setReforcoEnviado(true);
-  };
-
-  const closeReforcoModal = () => {
-    setIsReforcoOpen(false);
-    setReforcoEnviado(false);
-    setReforcoTitulo("");
-    setReforcoEmpresa("");
-    setReforcoLink("");
-    setReforcoObs("");
-  };
+  const closeReforcoModal = () => setIsReforcoOpen(false);
 
   const handleLogout = async () => {
     await signOut();
