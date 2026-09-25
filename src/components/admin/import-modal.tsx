@@ -276,27 +276,20 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         }
 
         if (!valNome && !valReferral) return; // Skip truly empty lines
+        totalLinhas += 1;
 
-        // Filter by Partner LHH if applicable
-        if (idxParceiro !== -1) {
-          const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
-          if (parceiro !== "LHH") return;
+        // Mandatory filter: only "Ativo" or "Ativo no DTE"
+        const statusPlanilha = normalizeHeader(String(idxStatusProg !== -1 ? row[idxStatusProg] ?? "" : ""));
+        if (statusPlanilha !== "ativo" && statusPlanilha !== "ativo no dte") {
+          lastCandidate = null;
+          return;
         }
 
-        const areaFromSheet = idxArea !== -1 ? filterPlaceholder(row[idxArea]) : null;
-        const nivelFromSheet = idxNivel !== -1 ? filterPlaceholder(row[idxNivel]) : null;
-        const roleSources = [
-          idxUltimaPos !== -1 ? row[idxUltimaPos] : null,
-          idxPosicoesAlvo !== -1 ? row[idxPosicoesAlvo] : null,
-          idxNomeCompleto !== -1 ? row[idxNomeCompleto] : null,
-        ];
-        const areaSources = [
-          areaFromSheet,
-          idxUltimaPos !== -1 ? row[idxUltimaPos] : null,
-          idxPosicoesAlvo !== -1 ? row[idxPosicoesAlvo] : null,
-          idxUltimoSeg !== -1 ? row[idxUltimoSeg] : null,
-          idxSegmentoAlvo !== -1 ? row[idxSegmentoAlvo] : null,
-        ];
+        const ultimoSeg = idxUltimoSeg !== -1 ? filterPlaceholder(row[idxUltimoSeg]) : null;
+        const areaFromSheet = ultimoSeg ?? (idxArea !== -1 ? filterPlaceholder(row[idxArea]) : null);
+        const nivelFromSheet = null;
+        const roleSources = idxUltimaPos !== -1 ? row[idxUltimaPos] : null;
+        const areaSources: unknown[] = [];
 
         const candidate = {
           referral_id: valReferral,
