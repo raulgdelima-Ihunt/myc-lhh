@@ -123,71 +123,30 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const data = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(data);
       
-      // Find best sheet based on priority
-      let targetSheetName = "";
-      let foundHeaderRow = -1;
-      let finalJsonData: any[][] = [];
-      const keywords = ["Assessorado", "Email", "Parceiro", "REFERRAL", "NOME", "E-MAIL"];
-
-      const sheetsInfo: { name: string, rows: number }[] = [];
-
-      for (const sheetName of workbook.SheetNames) {
-        const worksheet = workbook.Sheets[sheetName];
-        if (!worksheet) continue;
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
-        sheetsInfo.push({ name: sheetName, rows: jsonData.length });
-        
-        // Scan first 5 lines for header
-        for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
-          const rowData = jsonData[i];
-          if (!rowData) continue;
-          const row = rowData.map(cell => String(cell || "").trim().toUpperCase());
-
-          const hasReferral = row.some(cell => cell.includes("REFERRAL"));
-          const hasNome = row.some(cell => cell.includes("NOME"));
-          const hasEmail = row.some(cell => cell.includes("E-MAIL") || cell.includes("EMAIL"));
-
-          if (hasReferral && hasNome && hasEmail) {
-            // Found a candidate sheet. If we already found one, prefer the one with more rows.
-            if (foundHeaderRow === -1 || jsonData.length > finalJsonData.length) {
-              targetSheetName = sheetName;
-              foundHeaderRow = i;
-              finalJsonData = jsonData;
-            }
-            break; 
-          }
-
-          // Compatibility: check for old format if new not found yet
-          if (foundHeaderRow === -1) {
-            const hasAssessorado = row.some(cell => cell.includes("ASSESSORADO"));
-            if (hasAssessorado) {
-              targetSheetName = sheetName;
-              foundHeaderRow = i;
-              finalJsonData = jsonData;
-            }
-          }
-        }
+      // Only the "Candidatos" sheet is valid (ignore Orbit, DTE, Forms...)
+      const targetSheetName =
+        workbook.SheetNames.find((n) => normalizeHeader(n) === "candidatos") ?? "";
+      const worksheet = targetSheetName ? workbook.Sheets[targetSheetName] : undefined;
+      if (!worksheet) {
+        toast.error("Aba 'Candidatos' não encontrada no arquivo.");
+        setFile(null);
+        return;
       }
+      const finalJsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
 
-      console.log(`Abas encontradas: ${sheetsInfo.map(s => `${s.name} (${s.rows} linhas)`).join(", ")} | Aba selecionada: ${targetSheetName}`);
-
+      // Header: first row where cell A == "Referral" and cell B contains "Nome"
+      const foundHeaderRow = finalJsonData.findIndex((r) => {
+        const a = normalizeHeader(String(r?.[0] ?? ""));
+        const b = normalizeHeader(String(r?.[1] ?? ""));
+        return a === "referral" && b.includes("nome");
+      });
       if (foundHeaderRow === -1) {
-        const firstSheetName = workbook.SheetNames[0];
-        if (firstSheetName) {
-          const ws = workbook.Sheets[firstSheetName];
-          finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
-          foundHeaderRow = 0;
-          targetSheetName = firstSheetName;
-        }
-      }
-
-
-      const headerRowData = finalJsonData[foundHeaderRow];
-      if (!headerRowData) {
-        toast.error("Cabeçalho não encontrado.");
+        toast.error("Cabeçalho (Referral | Nome) não encontrado na aba 'Candidatos'.");
+        setFile(null);
         return;
       }
 
+      const headerRowData = finalJsonData[foundHeaderRow]!;
       const headers = headerRowData.map(h => String(h || "").trim());
       const dataRows = finalJsonData.slice(foundHeaderRow + 1);
 
