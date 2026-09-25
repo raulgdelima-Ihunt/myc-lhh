@@ -376,9 +376,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       let semAlteracao = 0;
 
       mappedData.forEach((c) => {
+        const legacy = byNome.get(c.nome_normalizado);
         const existing =
           (c.referral_id && byReferral.get(String(c.referral_id))) ||
-          byNome.get(c.nome_normalizado);
+          (legacy && !legacy.referral_id ? legacy : undefined);
 
         if (!existing) {
           novos += 1;
@@ -386,7 +387,6 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         }
 
         const changed = Object.keys(c).some((key) => {
-          if (key === "status") return false;
           const next = (c as any)[key];
           if (next === null || next === undefined || next === "") return false;
           return String(next) !== String(existing[key] ?? "");
@@ -426,10 +426,11 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       if (fetchError) throw fetchError;
 
       const byReferral = new Map<string, string>();
-      const byNome = new Map<string, string>();
+      const byNome = new Map<string, { id: string; referral_id: string | null }>();
       (existentes ?? []).forEach((r: any) => {
         if (r.referral_id) byReferral.set(String(r.referral_id), r.id);
-        if (r.nome_normalizado) byNome.set(String(r.nome_normalizado), r.id);
+        if (r.nome_normalizado)
+          byNome.set(String(r.nome_normalizado), { id: r.id, referral_id: r.referral_id ?? null });
       });
 
       // Deduplicate rows inside the spreadsheet itself (last one wins)
@@ -476,15 +477,18 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const toUpdate: { id: string; row: any }[] = [];
 
       uniqueRows.forEach((c) => {
-        const existingId =
-          (c.referral_id ? byReferral.get(String(c.referral_id)) : undefined) ??
-          (c.nome_normalizado ? byNome.get(String(c.nome_normalizado)) : undefined);
+        // Referral ID is the permanent key. Legacy records (no referral) with the
+        // same normalized name are adopted and receive the referral.
+        const refId = c.referral_id ? byReferral.get(String(c.referral_id)) : undefined;
+        const legacy = c.nome_normalizado ? byNome.get(String(c.nome_normalizado)) : undefined;
+        const existingId = refId ?? (legacy && !legacy.referral_id ? legacy.id : undefined);
 
         if (existingId) {
-          // Preserve the status already set in the portal
-          const { status, ...rest } = c;
-          toUpdate.push({ id: existingId, row: stripEmptyUpdateValues(rest) });
+          if (!refId && legacy) legacy.referral_id = String(c.referral_id ?? "");
+          toUpdate.push({ id: existingId, row: stripEmptyUpdateValues(c) });
         } else {
+          // Name collides with another referral: keep nome_normalizado unique
+          if (legacy && c.referral_id) c.nome_normalizado = `${c.nome_normalizado}#${c.referral_id}`;
           toInsert.push(c);
         }
       });
