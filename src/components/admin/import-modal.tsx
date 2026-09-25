@@ -368,7 +368,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const byNome = new Map<string, any>();
       (existentes ?? []).forEach((row: any) => {
         if (row.referral_id) byReferral.set(String(row.referral_id), row);
-        if (row.nome_normalizado) byNome.set(String(row.nome_normalizado), row);
+        if (row.nome_normalizado && String(row.status || "").toLowerCase() !== "duplicado") byNome.set(String(row.nome_normalizado), row);
       });
 
       let novos = 0;
@@ -422,14 +422,14 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       // Never delete: keep existing candidates and their current status
       const { data: existentes, error: fetchError } = await supabase
         .from("candidatos")
-        .select("id, referral_id, nome_normalizado");
+        .select("id, referral_id, nome_normalizado, status");
       if (fetchError) throw fetchError;
 
       const byReferral = new Map<string, string>();
       const byNome = new Map<string, { id: string; referral_id: string | null }>();
       (existentes ?? []).forEach((r: any) => {
         if (r.referral_id) byReferral.set(String(r.referral_id), r.id);
-        if (r.nome_normalizado)
+        if (r.nome_normalizado && String(r.status || "").toLowerCase() !== "duplicado")
           byNome.set(String(r.nome_normalizado), { id: r.id, referral_id: r.referral_id ?? null });
       });
 
