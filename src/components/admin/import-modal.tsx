@@ -479,19 +479,15 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const toUpdate: { id: string; row: any }[] = [];
 
       uniqueRows.forEach((c) => {
-        // Referral ID is the permanent key. Legacy records (no referral) with the
-        // same normalized name are adopted and receive the referral.
-        const refId = c.referral_id ? byReferral.get(String(c.referral_id)) : undefined;
-        const legacy = c.nome_normalizado ? byNome.get(String(c.nome_normalizado)) : undefined;
-        const existingId = refId ?? (legacy && !legacy.referral_id ? legacy.id : undefined);
-
+        // Referral ID is the only matching key.
+        if (!c.referral_id || !String(c.referral_id).trim()) {
+          console.warn(`[Importação] Linha sem Referral ID ignorada: "${c.nome}"`);
+          return;
+        }
+        const existingId = byReferral.get(String(c.referral_id));
         if (existingId) {
-          if (!refId && legacy) legacy.referral_id = String(c.referral_id ?? "");
           toUpdate.push({ id: existingId, row: stripEmptyUpdateValues(c) });
         } else {
-          // Name collides with another referral: keep nome_normalizado unique
-          if (c.referral_id && allNomes.has(String(c.nome_normalizado))) c.nome_normalizado = `${c.nome_normalizado}#${c.referral_id}`;
-          allNomes.add(String(c.nome_normalizado));
           toInsert.push(c);
         }
       });
@@ -501,7 +497,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       for (let i = 0; i < toInsert.length; i += chunkSize) {
         const { error } = await supabase
           .from("candidatos")
-          .insert(toInsert.slice(i, i + chunkSize) as any);
+          .upsert(toInsert.slice(i, i + chunkSize) as any, { onConflict: "referral_id" });
         if (error) throw error;
       }
 
