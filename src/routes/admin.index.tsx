@@ -311,6 +311,10 @@ function AdminPage() {
         onClose={() => setIsConsultorModalOpen(false)}
         consultores={consultores}
       />
+      <ConectoresModal
+        isOpen={isConectoresModalOpen}
+        onClose={() => setIsConectoresModalOpen(false)}
+      />
     </div>
   );
 }
