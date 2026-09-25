@@ -249,6 +249,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       const mappedData: any[] = [];
       let lastCandidate: any = null;
+      let totalLinhas = 0;
 
       dataRows.forEach((row, rowIndex) => {
         const valReferral = idxReferral !== -1 ? filterPlaceholder(row[idxReferral]) : null;
@@ -317,7 +318,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           empresas_alvo: idxEmpresasAlvo !== -1 ? filterPlaceholder(row[idxEmpresasAlvo]) : null,
           observacao: idxObservacao !== -1 ? filterPlaceholder(row[idxObservacao]) : null,
           idade: idxIdade !== -1 ? filterPlaceholder(row[idxIdade]) : null,
-          area: areaFromSheet || inferArea(areaSources),
+          area: areaFromSheet || inferArea(areaSources) || null,
           nivel_cargo: nivelFromSheet || inferNivelCargo(roleSources),
           link_relatorio: idxLinkRelatorio !== -1 ? filterPlaceholder(row[idxLinkRelatorio]) : null,
           cv_candidato: idxCVCandidato !== -1 ? filterPlaceholder(row[idxCVCandidato]) : null,
@@ -352,7 +353,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         headerRow: foundHeaderRow + 1,
         columnsFound: headers.filter((h, i) => h && i !== -1),
         hasPartnerFilter: idxParceiro !== -1,
-        totalBeforeFilter: dataRows.length,
+        totalBeforeFilter: totalLinhas,
         totalAfterFilter: mappedData.length
       });
 
@@ -552,7 +553,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             <div className="space-y-6">
               {debugInfo && (
                 <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
-                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")} | Filtro Parceiro: {debugInfo.hasPartnerFilter ? "Sim" : "Não"} | Total antes do filtro: {debugInfo.totalBeforeFilter} | Após filtro LHH: {debugInfo.totalAfterFilter}
+                  <div>Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho encontrada: {debugInfo.headerRow}</div>
+                  <div>Total na planilha: {debugInfo.totalBeforeFilter} | Ativos filtrados: {debugInfo.totalAfterFilter} | Ignorados (completo/inativo): {debugInfo.totalBeforeFilter - debugInfo.totalAfterFilter}</div>
                 </div>
               )}
               <div className="grid grid-cols-3 gap-4">
@@ -600,9 +602,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                       <TableRow>
                         <TableHead>Referral</TableHead>
                         <TableHead>Nome</TableHead>
-                        <TableHead>E-mail</TableHead>
-                        <TableHead>Área</TableHead>
-                        <TableHead>Status Prog.</TableHead>
+                        <TableHead>Consultor</TableHead>
+                        <TableHead>Talent</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Nível Cargo</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -610,9 +613,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                         <TableRow key={i}>
                           <TableCell className="font-mono text-[10px]">{row.referral_id || "-"}</TableCell>
                           <TableCell className="font-medium">{row.nome}</TableCell>
-                          <TableCell>{row.email || "-"}</TableCell>
-                          <TableCell>{row.area || "-"}</TableCell>
+                          <TableCell>{row.consultor_responsavel || "-"}</TableCell>
+                          <TableCell>{row.talent || "-"}</TableCell>
                           <TableCell>{row.status_programa || "-"}</TableCell>
+                          <TableCell>{row.nivel_cargo || "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
