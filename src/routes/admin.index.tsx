@@ -206,7 +206,7 @@ function AdminPage() {
               <p className="mt-2 text-[12px] leading-snug">
                 <span className="text-[#4CAF50] font-medium">{resumoStatus.ativo} {resumoStatus.ativo === 1 ? "Ativo" : "Ativos"}</span>
                 {" · "}
-                <span className="text-[#66BB6A] font-medium">{resumoStatus.ativoDte} {resumoStatus.ativoDte === 1 ? "DTE" : "DTE"}</span>
+                <span className="text-[#66BB6A] font-medium">{resumoStatus.ativoDte} DTE</span>
                 {" · "}
                 <span className="text-[#9E9E9E] font-medium">{resumoStatus.completo} {resumoStatus.completo === 1 ? "Completo" : "Completos"}</span>
                 {" · "}
