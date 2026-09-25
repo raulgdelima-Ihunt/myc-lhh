@@ -258,6 +258,14 @@ function DashboardPage() {
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-[#333333]">Olá, {data?.candidato.nome}</h2>
                 <p className="text-[#666666]">Aqui você acompanha o progresso de suas indicações em tempo real.</p>
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-[#333333]">
+                    Seu Conector: {conector ? conector.nome : "não atribuído"}
+                  </p>
+                  {conector?.email && (
+                    <p className="text-sm text-[#666666]">{conector.email}</p>
+                  )}
+                </div>
               </div>
 
               {/* Stats Cards */}
