@@ -36,6 +36,13 @@
       "when": 1790352077402,
       "tag": "0004_create_solicitacoes_reforco",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790363193173,
+      "tag": "0005_relax_nome_normalizado_unique",
+      "breakpoints": true
     }
   ]
 }
