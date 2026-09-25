@@ -268,6 +268,10 @@ function CandidatoDetail() {
                   <h1 className="text-3xl font-bold text-[#333333] tracking-tight">{candidato?.nome}</h1>
 
                   <p className="text-[#666666] font-medium">{candidato?.email || "E-mail não informado"}</p>
+                  <p className="text-sm text-[#666666]">
+                    Conector: <span className="font-medium text-[#333333]">{conector ? conector.nome : "não atribuído"}</span>
+                    {conector?.email && <span className="text-[#666666]"> — {conector.email}</span>}
+                  </p>
                   <div className="flex flex-wrap gap-2 mt-4">
                     <span className="text-xs bg-[#F5F5F5] text-[#666666] px-3 py-1 rounded-full font-semibold border border-border">
                       {(candidato as any)?.area}
