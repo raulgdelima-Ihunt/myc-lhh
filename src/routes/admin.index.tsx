@@ -49,6 +49,7 @@ function AdminPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isImportIndicacoesModalOpen, setIsImportIndicacoesModalOpen] = useState(false);
   const [isConsultorModalOpen, setIsConsultorModalOpen] = useState(false);
+  const [isConectoresModalOpen, setIsConectoresModalOpen] = useState(false);
 
   const { data: candidatos, isLoading: isLoadingCandidatos, refetch: refetchCandidatos } = useCandidatos(searchTerm);
   const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useAdminStats();
@@ -104,6 +105,14 @@ function AdminPage() {
             >
               <UserCog size={18} className="mr-2" />
               Criar acesso consultor
+            </Button>
+            <Button
+              onClick={() => setIsConectoresModalOpen(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
+            >
+              <Network size={18} className="mr-2" />
+              Conectores
             </Button>
             <Button
               onClick={() => setIsImportModalOpen(true)}
