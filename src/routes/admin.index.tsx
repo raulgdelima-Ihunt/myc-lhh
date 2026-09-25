@@ -46,6 +46,7 @@ function AdminPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [consultorFilter, setConsultorFilter] = useState("all");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isImportIndicacoesModalOpen, setIsImportIndicacoesModalOpen] = useState(false);
   const [isConsultorModalOpen, setIsConsultorModalOpen] = useState(false);
@@ -56,11 +57,26 @@ function AdminPage() {
 
   const filteredCandidatos = useMemo(() => {
     if (!candidatos) return [];
-    if (statusFilter === "all") return candidatos;
-    return candidatos.filter(
-      (c) => String(c.status || "").trim().toLowerCase() === statusFilter,
-    );
-  }, [candidatos, statusFilter]);
+    return candidatos.filter((c) => {
+      const matchesStatus =
+        statusFilter === "all" ||
+        String(c.status || "").trim().toLowerCase() === statusFilter;
+      const matchesConsultor =
+        consultorFilter === "all" ||
+        (c.consultor_responsavel || "").trim() === consultorFilter;
+      return matchesStatus && matchesConsultor;
+    });
+  }, [candidatos, statusFilter, consultorFilter]);
+
+  const consultorResumo = useMemo(() => {
+    if (consultorFilter === "all" || !candidatos) return null;
+    const ativos = candidatos.filter(
+      (c) =>
+        (c.consultor_responsavel || "").trim() === consultorFilter &&
+        String(c.status || "").trim().toLowerCase() === "ativo",
+    ).length;
+    return { nome: consultorFilter, ativos };
+  }, [candidatos, consultorFilter]);
 
   const consultores = useMemo(() => {
     const names = new Set(
