@@ -128,6 +128,7 @@ function ConsultorPage() {
               <Table>
                 <TableHeader className="bg-[#F5F5F5]">
                   <TableRow>
+                    <TableHead className="font-semibold">Referral</TableHead>
                     <TableHead className="font-semibold">Nome</TableHead>
                     <TableHead className="font-semibold">E-mail</TableHead>
                     <TableHead className="font-semibold">Status</TableHead>
@@ -144,6 +145,7 @@ function ConsultorPage() {
                         className={`cursor-pointer transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}`}
                         onClick={() => navigate({ to: "/consultor/candidato/$id", params: { id: c.id } })}
                       >
+                        <TableCell className="text-[#666666]">{c.referral_id || "-"}</TableCell>
                         <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
                         <TableCell className="text-[#666666]">
                           {c.email || <span className="text-sm italic text-gray-300">Sem e-mail</span>}

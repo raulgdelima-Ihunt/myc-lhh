@@ -68,6 +68,17 @@ function AdminPage() {
     });
   }, [candidatos, statusFilter, consultorFilter]);
 
+  const filtrosAtivos =
+    searchTerm.trim() !== "" || statusFilter !== "all" || consultorFilter !== "all";
+
+  const totalExibindo = useMemo(() => {
+    if (!candidatos) return 0;
+    if (filtrosAtivos) return filteredCandidatos.length;
+    return candidatos.filter(
+      (c) => String(c.status || "").trim().toLowerCase() !== "duplicado",
+    ).length;
+  }, [candidatos, filtrosAtivos, filteredCandidatos.length]);
+
   const consultorResumo = useMemo(() => {
     if (consultorFilter === "all" || !candidatos) return null;
     const ativos = candidatos.filter(
@@ -276,6 +287,14 @@ function AdminPage() {
             </div>
           )}
 
+          {!isLoadingCandidatos && (
+            <div className="flex justify-end px-6 pt-4 pb-1">
+              <p className="text-sm text-[#666666]">
+                Exibindo {totalExibindo} {totalExibindo === 1 ? "candidato" : "candidatos"}
+              </p>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             {isLoadingCandidatos ? (
               <div className="p-12 text-center">
@@ -286,6 +305,7 @@ function AdminPage() {
               <Table>
                 <TableHeader className="bg-[#F5F5F5]">
                   <TableRow>
+                    <TableHead className="font-semibold">Referral</TableHead>
                     <TableHead className="font-semibold">Nome</TableHead>
                     <TableHead className="font-semibold">E-mail</TableHead>
                     <TableHead className="font-semibold">Área</TableHead>
@@ -303,6 +323,7 @@ function AdminPage() {
                         className={`cursor-pointer transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}
                         onClick={() => window.location.href = '/admin/candidato/' + c.id}
                       >
+                        <TableCell className="text-[#666666]">{c.referral_id || "-"}</TableCell>
                         <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
                         <TableCell className="text-[#666666]">
                           {c.email ? c.email : <span className="text-gray-300 italic text-sm">Sem e-mail</span>}
