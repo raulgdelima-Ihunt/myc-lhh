@@ -427,7 +427,9 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       const byReferral = new Map<string, string>();
       const byNome = new Map<string, { id: string; referral_id: string | null }>();
+      const allNomes = new Set<string>();
       (existentes ?? []).forEach((r: any) => {
+        if (r.nome_normalizado) allNomes.add(String(r.nome_normalizado));
         if (r.referral_id) byReferral.set(String(r.referral_id), r.id);
         if (r.nome_normalizado && String(r.status || "").toLowerCase() !== "duplicado")
           byNome.set(String(r.nome_normalizado), { id: r.id, referral_id: r.referral_id ?? null });
@@ -488,7 +490,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           toUpdate.push({ id: existingId, row: stripEmptyUpdateValues(c) });
         } else {
           // Name collides with another referral: keep nome_normalizado unique
-          if (legacy && c.referral_id) c.nome_normalizado = `${c.nome_normalizado}#${c.referral_id}`;
+          if (c.referral_id && allNomes.has(String(c.nome_normalizado))) c.nome_normalizado = `${c.nome_normalizado}#${c.referral_id}`;
+          allNomes.add(String(c.nome_normalizado));
           toInsert.push(c);
         }
       });
@@ -593,8 +596,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
               </div>
 
               <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                A importação nunca apaga candidatos. Quem já existe é atualizado (mantendo o status
-                atual) e quem não está na planilha permanece como está.
+                A importação nunca apaga candidatos. O Referral ID é a chave: quem já existe é atualizado
+                com os dados da planilha e quem não está na planilha permanece como está.
               </p>
 
               <div>
