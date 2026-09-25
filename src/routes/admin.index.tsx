@@ -140,6 +140,14 @@ function AdminPage() {
               Conectores
             </Button>
             <Button
+              onClick={() => setIsDuplicatasModalOpen(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
+            >
+              <CopyX size={18} className="mr-2" />
+              Limpar Duplicatas Antigas
+            </Button>
+            <Button
               onClick={() => setIsImportModalOpen(true)}
               className="bg-primary hover:bg-[#5A2574] text-white rounded-[6px]"
             >
@@ -372,6 +380,11 @@ function AdminPage() {
       <ConectoresModal
         isOpen={isConectoresModalOpen}
         onClose={() => setIsConectoresModalOpen(false)}
+      />
+      <DuplicatasModal
+        isOpen={isDuplicatasModalOpen}
+        onClose={() => setIsDuplicatasModalOpen(false)}
+        onSuccess={handleImportSuccess}
       />
     </div>
   );
