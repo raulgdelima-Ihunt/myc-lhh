@@ -301,7 +301,7 @@ function DashboardPage() {
                       onClick={() => setIsReforcoOpen(true)}
                       className="h-10 rounded-[6px] bg-[#6B2D8B] px-4 text-sm font-medium text-white hover:bg-[#5a2576]"
                     >
-                      <Send size={16} />
+                      <Mail size={16} />
                       Solicitar Reforço de Candidatura
                     </Button>
                     <Select value={monthFilter} onValueChange={setMonthFilter}>
