@@ -51,8 +51,56 @@ function DashboardPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isReforcoOpen, setIsReforcoOpen] = useState(false);
+  const [reforcoTitulo, setReforcoTitulo] = useState("");
+  const [reforcoEmpresa, setReforcoEmpresa] = useState("");
+  const [reforcoLink, setReforcoLink] = useState("");
+  const [reforcoObs, setReforcoObs] = useState("");
+  const [isSendingReforco, setIsSendingReforco] = useState(false);
+  const [reforcoEnviado, setReforcoEnviado] = useState(false);
 
   const { data, isLoading, error } = useCandidateDashboard(user?.email || "");
+
+  const { data: conector } = useQuery({
+    queryKey: ["conector", data?.candidato.conector_id],
+    enabled: !!data?.candidato.conector_id,
+    queryFn: async () => {
+      const { data: c } = await supabase
+        .from("conectores")
+        .select("nome, email")
+        .eq("id", data!.candidato.conector_id!)
+        .maybeSingle();
+      return c;
+    },
+  });
+
+  const handleEnviarReforco = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data?.candidato.id) return;
+    setIsSendingReforco(true);
+    const { error: insertError } = await supabase.from("solicitacoes_reforco").insert({
+      candidato_id: data.candidato.id,
+      titulo_vaga: reforcoTitulo.trim(),
+      empresa: reforcoEmpresa.trim(),
+      link_vaga: reforcoLink.trim() || null,
+      observacoes: reforcoObs.trim() || null,
+    });
+    setIsSendingReforco(false);
+    if (insertError) {
+      toast.error("Não foi possível registrar a solicitação. Tente novamente.");
+      return;
+    }
+    setReforcoEnviado(true);
+  };
+
+  const closeReforcoModal = () => {
+    setIsReforcoOpen(false);
+    setReforcoEnviado(false);
+    setReforcoTitulo("");
+    setReforcoEmpresa("");
+    setReforcoLink("");
+    setReforcoObs("");
+  };
 
   const handleLogout = async () => {
     await signOut();
