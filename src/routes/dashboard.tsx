@@ -470,6 +470,81 @@ function DashboardPage() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isReforcoOpen} onOpenChange={(open) => (open ? setIsReforcoOpen(true) : closeReforcoModal())}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Solicitar Reforço de Candidatura</DialogTitle>
+            </DialogHeader>
+            {reforcoEnviado ? (
+              <div className="space-y-4">
+                <div className="rounded-[6px] border border-green-200 bg-green-50 p-4">
+                  <p className="text-sm text-[#333333]">
+                    {conector
+                      ? `Solicitação registrada. Para agilizar, envie os detalhes diretamente para seu conector: ${conector.nome} — ${conector.email}`
+                      : "Solicitação registrada. Entre em contato com a equipe MyCareer para acompanhamento."}
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <Button type="button" onClick={closeReforcoModal}>Fechar</Button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleEnviarReforco} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">Título da Vaga *</label>
+                  <Input
+                    value={reforcoTitulo}
+                    onChange={(e) => setReforcoTitulo(e.target.value)}
+                    required
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">Empresa *</label>
+                  <Input
+                    value={reforcoEmpresa}
+                    onChange={(e) => setReforcoEmpresa(e.target.value)}
+                    required
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">Link da Vaga (opcional)</label>
+                  <Input
+                    type="url"
+                    value={reforcoLink}
+                    onChange={(e) => setReforcoLink(e.target.value)}
+                    maxLength={500}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">
+                    Observações — por que você é aderente a esta posição (opcional)
+                  </label>
+                  <Textarea
+                    value={reforcoObs}
+                    onChange={(e) => setReforcoObs(e.target.value)}
+                    rows={4}
+                    maxLength={1000}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={closeReforcoModal} disabled={isSendingReforco}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSendingReforco}
+                    className="bg-[#6B2D8B] text-white hover:bg-[#5a2576]"
+                  >
+                    {isSendingReforco ? "Enviando..." : "Enviar Solicitação"}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </AuthGuard>
   );
