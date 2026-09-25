@@ -68,6 +68,17 @@ function AdminPage() {
     });
   }, [candidatos, statusFilter, consultorFilter]);
 
+  const filtrosAtivos =
+    searchTerm.trim() !== "" || statusFilter !== "all" || consultorFilter !== "all";
+
+  const totalExibindo = useMemo(() => {
+    if (!candidatos) return 0;
+    if (filtrosAtivos) return filteredCandidatos.length;
+    return candidatos.filter(
+      (c) => String(c.status || "").trim().toLowerCase() !== "duplicado",
+    ).length;
+  }, [candidatos, filtrosAtivos, filteredCandidatos.length]);
+
   const consultorResumo = useMemo(() => {
     if (consultorFilter === "all" || !candidatos) return null;
     const ativos = candidatos.filter(
@@ -272,6 +283,14 @@ function AdminPage() {
             <div className="px-6 py-3 border-b border-border bg-[#F0EBF5]">
               <p className="text-sm font-medium text-primary">
                 Consultor: {consultorResumo.nome} — {consultorResumo.ativos} candidatos ativos
+              </p>
+            </div>
+          )}
+
+          {!isLoadingCandidatos && (
+            <div className="flex justify-end px-6 pt-4 pb-1">
+              <p className="text-sm text-[#666666]">
+                Exibindo {totalExibindo} {totalExibindo === 1 ? "candidato" : "candidatos"}
               </p>
             </div>
           )}
