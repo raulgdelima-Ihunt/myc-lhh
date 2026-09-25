@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useCandidateDashboard } from "@/hooks/use-candidato-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
@@ -450,77 +449,49 @@ function DashboardPage() {
         <Dialog open={isReforcoOpen} onOpenChange={(open) => (open ? setIsReforcoOpen(true) : closeReforcoModal())}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Solicitar Reforço de Candidatura</DialogTitle>
+              <DialogTitle>Reforço de Candidatura</DialogTitle>
             </DialogHeader>
-            {reforcoEnviado ? (
-              <div className="space-y-4">
-                <div className="rounded-[6px] border border-green-200 bg-green-50 p-4">
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-[#333333]">
+                Para solicitar o reforço da sua candidatura em uma vaga específica, envie um
+                e-mail para o seu conector informando: o título da vaga, a empresa, o link (se
+                disponível) e por que você é aderente à posição.
+              </p>
+              {conector ? (
+                <div className="space-y-1 rounded-[6px] border border-primary/30 bg-[#F0EBF5] p-4">
+                  <p className="text-sm font-semibold text-[#333333]">
+                    Seu Conector: <span className="text-primary">{conector.nome}</span>
+                  </p>
+                  {conector.email ? (
+                    <p className="text-sm text-[#333333]">
+                      E-mail:{" "}
+                      <a
+                        href={`mailto:${conector.email}`}
+                        className="font-semibold text-primary underline-offset-2 hover:underline"
+                      >
+                        {conector.email}
+                      </a>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-[#666666]">E-mail do conector não cadastrado.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-[6px] border border-amber-200 bg-amber-50 p-4">
                   <p className="text-sm text-[#333333]">
-                    {conector
-                      ? `Solicitação registrada. Para agilizar, envie os detalhes diretamente para seu conector: ${conector.nome} — ${conector.email}`
-                      : "Solicitação registrada. Entre em contato com a equipe MyCareer para acompanhamento."}
+                    Entre em contato com a equipe MyCareer para identificar seu conector responsável.
                   </p>
                 </div>
-                <div className="flex justify-end">
-                  <Button type="button" onClick={closeReforcoModal}>Fechar</Button>
-                </div>
+              )}
+              <div className="flex justify-end">
+                <Button type="button" variant="outline" onClick={closeReforcoModal}>
+                  Fechar
+                </Button>
               </div>
-            ) : (
-              <form onSubmit={handleEnviarReforco} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-[#333333]">Título da Vaga *</label>
-                  <Input
-                    value={reforcoTitulo}
-                    onChange={(e) => setReforcoTitulo(e.target.value)}
-                    required
-                    maxLength={200}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-[#333333]">Empresa *</label>
-                  <Input
-                    value={reforcoEmpresa}
-                    onChange={(e) => setReforcoEmpresa(e.target.value)}
-                    required
-                    maxLength={200}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-[#333333]">Link da Vaga (opcional)</label>
-                  <Input
-                    type="url"
-                    value={reforcoLink}
-                    onChange={(e) => setReforcoLink(e.target.value)}
-                    maxLength={500}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-[#333333]">
-                    Observações — por que você é aderente a esta posição (opcional)
-                  </label>
-                  <Textarea
-                    value={reforcoObs}
-                    onChange={(e) => setReforcoObs(e.target.value)}
-                    rows={4}
-                    maxLength={1000}
-                  />
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={closeReforcoModal} disabled={isSendingReforco}>
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={isSendingReforco}
-                    className="bg-[#6B2D8B] text-white hover:bg-[#5a2576]"
-                  >
-                    {isSendingReforco ? "Enviando..." : "Enviar Solicitação"}
-                  </Button>
-                </div>
-              </form>
-            )}
+            </div>
           </DialogContent>
         </Dialog>
+
       </div>
     </AuthGuard>
   );
