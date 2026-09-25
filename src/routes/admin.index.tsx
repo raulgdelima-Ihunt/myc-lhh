@@ -323,6 +323,7 @@ function AdminPage() {
                         className={`cursor-pointer transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}
                         onClick={() => window.location.href = '/admin/candidato/' + c.id}
                       >
+                        <TableCell className="text-[#666666]">{c.referral_id || "-"}</TableCell>
                         <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
                         <TableCell className="text-[#666666]">
                           {c.email ? c.email : <span className="text-gray-300 italic text-sm">Sem e-mail</span>}
