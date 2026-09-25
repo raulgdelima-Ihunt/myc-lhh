@@ -71,16 +71,13 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       .trim()
       .toLowerCase();
 
-  const inferNivelCargo = (values: unknown[]) => {
-    const text = normalizeHeader(values.filter(Boolean).join(" "));
-    if (!text) return null;
-
-    if (/\b(c[-\s]?level|ceo|cfo|coo|cio|cto|chro|cmo|chief|presidente|vice presidente|vp)\b/.test(text)) {
-      return "C-Level";
-    }
-    if (/\b(diretor|diretora|director|head|superintendente)\b/.test(text)) return "Diretor";
-    if (/\b(gerente|gerencia|manager)\b/.test(text)) return "Gerente";
-    if (/\b(coordenador|coordenadora|coordenacao|coordinator|supervisor)\b/.test(text)) return "Coordenador";
+  const inferNivelCargo = (posicao: unknown) => {
+    const text = normalizeHeader(String(posicao ?? ""));
+    if (!text || text.includes("nenhum cargo encontrado")) return "Não identificado";
+    if (/\b(ceo|cfo|coo|cto|cmo|chro|vp|vice[- ]presidente|presidente|c[- ]level|chief)\b/.test(text)) return "C-Level";
+    if (/\b(diretor|diretora)\b/.test(text)) return "Diretor";
+    if (/\b(gerente|head|lider|superintendente)\b/.test(text)) return "Gerente";
+    if (/\b(coordenador|coordenadora|supervisor|supervisora)\b/.test(text)) return "Coordenador";
     return "Especialista";
   };
 
@@ -123,71 +120,30 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const data = await selectedFile.arrayBuffer();
       const workbook = XLSX.read(data);
       
-      // Find best sheet based on priority
-      let targetSheetName = "";
-      let foundHeaderRow = -1;
-      let finalJsonData: any[][] = [];
-      const keywords = ["Assessorado", "Email", "Parceiro", "REFERRAL", "NOME", "E-MAIL"];
-
-      const sheetsInfo: { name: string, rows: number }[] = [];
-
-      for (const sheetName of workbook.SheetNames) {
-        const worksheet = workbook.Sheets[sheetName];
-        if (!worksheet) continue;
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
-        sheetsInfo.push({ name: sheetName, rows: jsonData.length });
-        
-        // Scan first 5 lines for header
-        for (let i = 0; i < Math.min(jsonData.length, 5); i++) {
-          const rowData = jsonData[i];
-          if (!rowData) continue;
-          const row = rowData.map(cell => String(cell || "").trim().toUpperCase());
-
-          const hasReferral = row.some(cell => cell.includes("REFERRAL"));
-          const hasNome = row.some(cell => cell.includes("NOME"));
-          const hasEmail = row.some(cell => cell.includes("E-MAIL") || cell.includes("EMAIL"));
-
-          if (hasReferral && hasNome && hasEmail) {
-            // Found a candidate sheet. If we already found one, prefer the one with more rows.
-            if (foundHeaderRow === -1 || jsonData.length > finalJsonData.length) {
-              targetSheetName = sheetName;
-              foundHeaderRow = i;
-              finalJsonData = jsonData;
-            }
-            break; 
-          }
-
-          // Compatibility: check for old format if new not found yet
-          if (foundHeaderRow === -1) {
-            const hasAssessorado = row.some(cell => cell.includes("ASSESSORADO"));
-            if (hasAssessorado) {
-              targetSheetName = sheetName;
-              foundHeaderRow = i;
-              finalJsonData = jsonData;
-            }
-          }
-        }
+      // Only the "Candidatos" sheet is valid (ignore Orbit, DTE, Forms...)
+      const targetSheetName =
+        workbook.SheetNames.find((n) => normalizeHeader(n) === "candidatos") ?? "";
+      const worksheet = targetSheetName ? workbook.Sheets[targetSheetName] : undefined;
+      if (!worksheet) {
+        toast.error("Aba 'Candidatos' não encontrada no arquivo.");
+        setFile(null);
+        return;
       }
+      const finalJsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" }) as any[][];
 
-      console.log(`Abas encontradas: ${sheetsInfo.map(s => `${s.name} (${s.rows} linhas)`).join(", ")} | Aba selecionada: ${targetSheetName}`);
-
+      // Header: first row where cell A == "Referral" and cell B contains "Nome"
+      const foundHeaderRow = finalJsonData.findIndex((r) => {
+        const a = normalizeHeader(String(r?.[0] ?? ""));
+        const b = normalizeHeader(String(r?.[1] ?? ""));
+        return a === "referral" && b.includes("nome");
+      });
       if (foundHeaderRow === -1) {
-        const firstSheetName = workbook.SheetNames[0];
-        if (firstSheetName) {
-          const ws = workbook.Sheets[firstSheetName];
-          finalJsonData = ws ? XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" }) as any[][] : [];
-          foundHeaderRow = 0;
-          targetSheetName = firstSheetName;
-        }
-      }
-
-
-      const headerRowData = finalJsonData[foundHeaderRow];
-      if (!headerRowData) {
-        toast.error("Cabeçalho não encontrado.");
+        toast.error("Cabeçalho (Referral | Nome) não encontrado na aba 'Candidatos'.");
+        setFile(null);
         return;
       }
 
+      const headerRowData = finalJsonData[foundHeaderRow]!;
       const headers = headerRowData.map(h => String(h || "").trim());
       const dataRows = finalJsonData.slice(foundHeaderRow + 1);
 
@@ -293,6 +249,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       const mappedData: any[] = [];
       let lastCandidate: any = null;
+      let totalLinhas = 0;
 
       dataRows.forEach((row, rowIndex) => {
         const valReferral = idxReferral !== -1 ? filterPlaceholder(row[idxReferral]) : null;
@@ -320,27 +277,20 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         }
 
         if (!valNome && !valReferral) return; // Skip truly empty lines
+        totalLinhas += 1;
 
-        // Filter by Partner LHH if applicable
-        if (idxParceiro !== -1) {
-          const parceiro = String(row[idxParceiro] || "").trim().toUpperCase();
-          if (parceiro !== "LHH") return;
+        // Mandatory filter: only "Ativo" or "Ativo no DTE"
+        const statusPlanilha = normalizeHeader(String(idxStatusProg !== -1 ? row[idxStatusProg] ?? "" : ""));
+        if (statusPlanilha !== "ativo" && statusPlanilha !== "ativo no dte") {
+          lastCandidate = null;
+          return;
         }
 
-        const areaFromSheet = idxArea !== -1 ? filterPlaceholder(row[idxArea]) : null;
-        const nivelFromSheet = idxNivel !== -1 ? filterPlaceholder(row[idxNivel]) : null;
-        const roleSources = [
-          idxUltimaPos !== -1 ? row[idxUltimaPos] : null,
-          idxPosicoesAlvo !== -1 ? row[idxPosicoesAlvo] : null,
-          idxNomeCompleto !== -1 ? row[idxNomeCompleto] : null,
-        ];
-        const areaSources = [
-          areaFromSheet,
-          idxUltimaPos !== -1 ? row[idxUltimaPos] : null,
-          idxPosicoesAlvo !== -1 ? row[idxPosicoesAlvo] : null,
-          idxUltimoSeg !== -1 ? row[idxUltimoSeg] : null,
-          idxSegmentoAlvo !== -1 ? row[idxSegmentoAlvo] : null,
-        ];
+        const ultimoSeg = idxUltimoSeg !== -1 ? filterPlaceholder(row[idxUltimoSeg]) : null;
+        const areaFromSheet = ultimoSeg ?? (idxArea !== -1 ? filterPlaceholder(row[idxArea]) : null);
+        const nivelFromSheet = null;
+        const roleSources = idxUltimaPos !== -1 ? row[idxUltimaPos] : null;
+        const areaSources: unknown[] = [];
 
         const candidate = {
           referral_id: valReferral,
@@ -368,7 +318,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           empresas_alvo: idxEmpresasAlvo !== -1 ? filterPlaceholder(row[idxEmpresasAlvo]) : null,
           observacao: idxObservacao !== -1 ? filterPlaceholder(row[idxObservacao]) : null,
           idade: idxIdade !== -1 ? filterPlaceholder(row[idxIdade]) : null,
-          area: areaFromSheet || inferArea(areaSources),
+          area: areaFromSheet || inferArea(areaSources) || null,
           nivel_cargo: nivelFromSheet || inferNivelCargo(roleSources),
           link_relatorio: idxLinkRelatorio !== -1 ? filterPlaceholder(row[idxLinkRelatorio]) : null,
           cv_candidato: idxCVCandidato !== -1 ? filterPlaceholder(row[idxCVCandidato]) : null,
@@ -403,7 +353,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         headerRow: foundHeaderRow + 1,
         columnsFound: headers.filter((h, i) => h && i !== -1),
         hasPartnerFilter: idxParceiro !== -1,
-        totalBeforeFilter: dataRows.length,
+        totalBeforeFilter: totalLinhas,
         totalAfterFilter: mappedData.length
       });
 
@@ -603,7 +553,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             <div className="space-y-6">
               {debugInfo && (
                 <div className="bg-gray-100 p-3 rounded text-[11px] font-mono text-gray-700">
-                  Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho: {debugInfo.headerRow} | Colunas encontradas: {debugInfo.columnsFound.join(", ")} | Filtro Parceiro: {debugInfo.hasPartnerFilter ? "Sim" : "Não"} | Total antes do filtro: {debugInfo.totalBeforeFilter} | Após filtro LHH: {debugInfo.totalAfterFilter}
+                  <div>Aba selecionada: {debugInfo.sheetName} | Linha do cabeçalho encontrada: {debugInfo.headerRow}</div>
+                  <div>Total na planilha: {debugInfo.totalBeforeFilter} | Ativos filtrados: {debugInfo.totalAfterFilter} | Ignorados (completo/inativo): {debugInfo.totalBeforeFilter - debugInfo.totalAfterFilter}</div>
                 </div>
               )}
               <div className="grid grid-cols-3 gap-4">
@@ -651,9 +602,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                       <TableRow>
                         <TableHead>Referral</TableHead>
                         <TableHead>Nome</TableHead>
-                        <TableHead>E-mail</TableHead>
-                        <TableHead>Área</TableHead>
-                        <TableHead>Status Prog.</TableHead>
+                        <TableHead>Consultor</TableHead>
+                        <TableHead>Talent</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Nível Cargo</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -661,9 +613,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
                         <TableRow key={i}>
                           <TableCell className="font-mono text-[10px]">{row.referral_id || "-"}</TableCell>
                           <TableCell className="font-medium">{row.nome}</TableCell>
-                          <TableCell>{row.email || "-"}</TableCell>
-                          <TableCell>{row.area || "-"}</TableCell>
+                          <TableCell>{row.consultor_responsavel || "-"}</TableCell>
+                          <TableCell>{row.talent || "-"}</TableCell>
                           <TableCell>{row.status_programa || "-"}</TableCell>
+                          <TableCell>{row.nivel_cargo || "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
