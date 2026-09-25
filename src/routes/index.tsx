@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { resolveReferralEmail } from "@/lib/referral-login.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,9 +52,27 @@ function Index() {
     setError("");
     setDebugInfo("");
 
-    const cleanEmail = email.trim().toLowerCase();
-
+    const typed = email.trim();
     setLoading(true);
+
+    // Staff (admin/consultor) still log in with e-mail; candidates use their Referral code
+    let cleanEmail = typed.toLowerCase();
+    if (!typed.includes("@")) {
+      try {
+        const res = await resolveReferralEmail({ data: { referral: typed } });
+        if (!res.email) {
+          setError("Código referral não encontrado");
+          setLoading(false);
+          return;
+        }
+        cleanEmail = res.email;
+      } catch {
+        setError("Não foi possível verificar o código. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: cleanEmail,
       password,
@@ -61,7 +80,7 @@ function Index() {
 
     if (error) {
       setDebugInfo(`Auth: erro (${error.message}) | Candidato encontrado: - | Redirecionando para: -`);
-      setError("E-mail ou senha incorretos");
+      setError("Código ou senha incorretos");
       setLoading(false);
     } else {
       // Check user role to decide redirect
@@ -209,8 +228,9 @@ function Index() {
             <div className="relative">
               <Mail className="absolute left-3 top-3 text-gray-400" size={20} />
               <Input
-                type="email"
-                placeholder="E-mail"
+                type="text"
+                aria-label="Código Referral"
+                placeholder="Digite seu código referral"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="py-2.5 pl-10 pr-4"
