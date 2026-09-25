@@ -87,6 +87,20 @@ function AdminPage() {
     return { nome: consultorFilter, ativos };
   }, [candidatos, consultorFilter]);
 
+  const resumoStatus = useMemo(() => {
+    const list = candidatos ?? [];
+    const norm = (c: { status?: string | null }) =>
+      String(c.status || "").trim().toLowerCase();
+    const ativo = list.filter((c) => norm(c) === "ativo").length;
+    const ativoDte = list.filter((c) => norm(c) === "ativo no dte").length;
+    const completo = list.filter((c) => norm(c) === "completo").length;
+    const inativo = list.filter((c) =>
+      ["inativo_termino", "inativo_recolocacao", "declinado"].includes(norm(c)),
+    ).length;
+    const duplicado = list.filter((c) => norm(c) === "duplicado").length;
+    return { ativo, ativoDte, completo, inativo, duplicado };
+  }, [candidatos]);
+
   const consultores = useMemo(() => {
     const names = new Set(
       (candidatos ?? [])
@@ -189,6 +203,17 @@ function AdminPage() {
                   <Users className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
+              <p className="mt-2 text-[12px] leading-snug">
+                <span className="text-[#4CAF50] font-medium">{resumoStatus.ativo} {resumoStatus.ativo === 1 ? "Ativo" : "Ativos"}</span>
+                {" · "}
+                <span className="text-[#66BB6A] font-medium">{resumoStatus.ativoDte} {resumoStatus.ativoDte === 1 ? "DTE" : "DTE"}</span>
+                {" · "}
+                <span className="text-[#9E9E9E] font-medium">{resumoStatus.completo} {resumoStatus.completo === 1 ? "Completo" : "Completos"}</span>
+                {" · "}
+                <span className="text-[#FF9800] font-medium">{resumoStatus.inativo} {resumoStatus.inativo === 1 ? "Inativo" : "Inativos"}</span>
+                {" · "}
+                <span className="text-[#F44336] font-medium">{resumoStatus.duplicado} {resumoStatus.duplicado === 1 ? "Duplicado" : "Duplicados"}</span>
+              </p>
             </CardContent>
           </Card>
 
