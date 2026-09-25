@@ -298,6 +298,16 @@ function DashboardPage() {
               </div>
 
 
+              {/* Banner links expirados */}
+              <div className="mb-6 flex items-start gap-3 rounded-[6px] border-l-4 border-[#FF9800] bg-[#FFF3E0] p-4">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#FF9800]" />
+                <p className="text-sm text-[#333333]">
+                  Os links das vagas publicadas podem expirar sem aviso prévio, pois dependem da
+                  disponibilidade no site da empresa. Caso um link não funcione, entre em contato
+                  com seu conector.
+                </p>
+              </div>
+
               {/* Filters & Table */}
               <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
                 <div className="p-6 border-b border-border space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
@@ -311,6 +321,14 @@ function DashboardPage() {
                     />
                   </div>
                   <div className="flex flex-wrap gap-3">
+                    <Button
+                      type="button"
+                      onClick={() => setIsReforcoOpen(true)}
+                      className="h-10 rounded-[6px] bg-[#6B2D8B] px-4 text-sm font-medium text-white hover:bg-[#5a2576]"
+                    >
+                      <Send size={16} />
+                      Solicitar Reforço de Candidatura
+                    </Button>
                     <Select value={monthFilter} onValueChange={setMonthFilter}>
                       <SelectTrigger className="w-[160px] focus:ring-primary">
                         <SelectValue placeholder="Mês" />
