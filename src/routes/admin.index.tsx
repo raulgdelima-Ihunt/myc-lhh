@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase, UserCog } from "lucide-react";
+import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase, UserCog, Network } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import { useCandidatos, useAdminStats } from "@/hooks/use-candidatos";
 import { ImportCandidatosModal } from "@/components/admin/import-modal";
 import { ImportIndicacoesModal } from "@/components/admin/import-indicacoes-modal";
 import { CreateConsultorModal } from "@/components/admin/create-consultor-modal";
+import { ConectoresModal } from "@/components/admin/conectores-modal";
 import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
 
 export const Route = createFileRoute("/admin/")({
@@ -48,6 +49,7 @@ function AdminPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isImportIndicacoesModalOpen, setIsImportIndicacoesModalOpen] = useState(false);
   const [isConsultorModalOpen, setIsConsultorModalOpen] = useState(false);
+  const [isConectoresModalOpen, setIsConectoresModalOpen] = useState(false);
 
   const { data: candidatos, isLoading: isLoadingCandidatos, refetch: refetchCandidatos } = useCandidatos(searchTerm);
   const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useAdminStats();
@@ -103,6 +105,14 @@ function AdminPage() {
             >
               <UserCog size={18} className="mr-2" />
               Criar acesso consultor
+            </Button>
+            <Button
+              onClick={() => setIsConectoresModalOpen(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
+            >
+              <Network size={18} className="mr-2" />
+              Conectores
             </Button>
             <Button
               onClick={() => setIsImportModalOpen(true)}
@@ -300,6 +310,10 @@ function AdminPage() {
         isOpen={isConsultorModalOpen}
         onClose={() => setIsConsultorModalOpen(false)}
         consultores={consultores}
+      />
+      <ConectoresModal
+        isOpen={isConectoresModalOpen}
+        onClose={() => setIsConectoresModalOpen(false)}
       />
     </div>
   );

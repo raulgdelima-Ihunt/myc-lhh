@@ -15,6 +15,13 @@
       "when": 1789775253471,
       "tag": "0001_case_insensitive_candidate_email_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790351745699,
+      "tag": "0002_create_conectores",
+      "breakpoints": true
     }
   ]
 }
