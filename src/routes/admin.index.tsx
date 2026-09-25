@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase, UserCog, Network } from "lucide-react";
+import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase, UserCog, Network, CopyX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import { ImportCandidatosModal } from "@/components/admin/import-modal";
 import { ImportIndicacoesModal } from "@/components/admin/import-indicacoes-modal";
 import { CreateConsultorModal } from "@/components/admin/create-consultor-modal";
 import { ConectoresModal } from "@/components/admin/conectores-modal";
+import { DuplicatasModal } from "@/components/admin/duplicatas-modal";
 import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
 
 export const Route = createFileRoute("/admin/")({
@@ -51,6 +52,7 @@ function AdminPage() {
   const [isImportIndicacoesModalOpen, setIsImportIndicacoesModalOpen] = useState(false);
   const [isConsultorModalOpen, setIsConsultorModalOpen] = useState(false);
   const [isConectoresModalOpen, setIsConectoresModalOpen] = useState(false);
+  const [isDuplicatasModalOpen, setIsDuplicatasModalOpen] = useState(false);
 
   const { data: candidatos, isLoading: isLoadingCandidatos, refetch: refetchCandidatos } = useCandidatos(searchTerm);
   const { data: stats, isLoading: isLoadingStats, refetch: refetchStats } = useAdminStats();
@@ -58,9 +60,9 @@ function AdminPage() {
   const filteredCandidatos = useMemo(() => {
     if (!candidatos) return [];
     return candidatos.filter((c) => {
+      const st = String(c.status || "").trim().toLowerCase();
       const matchesStatus =
-        statusFilter === "all" ||
-        String(c.status || "").trim().toLowerCase() === statusFilter;
+        statusFilter === "all" ? st !== "duplicado" : st === statusFilter;
       const matchesConsultor =
         consultorFilter === "all" ||
         (c.consultor_responsavel || "").trim() === consultorFilter;
@@ -72,12 +74,8 @@ function AdminPage() {
     searchTerm.trim() !== "" || statusFilter !== "all" || consultorFilter !== "all";
 
   const totalExibindo = useMemo(() => {
-    if (!candidatos) return 0;
-    if (filtrosAtivos) return filteredCandidatos.length;
-    return candidatos.filter(
-      (c) => String(c.status || "").trim().toLowerCase() !== "duplicado",
-    ).length;
-  }, [candidatos, filtrosAtivos, filteredCandidatos.length]);
+    return filteredCandidatos.length;
+  }, [filteredCandidatos.length]);
 
   const consultorResumo = useMemo(() => {
     if (consultorFilter === "all" || !candidatos) return null;
@@ -260,6 +258,7 @@ function AdminPage() {
                       {option.label}
                     </SelectItem>
                   ))}
+                  <SelectItem value="duplicado">Duplicado</SelectItem>
                 </SelectContent>
               </Select>
 
