@@ -46,6 +46,7 @@ function AdminPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [consultorFilter, setConsultorFilter] = useState("all");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isImportIndicacoesModalOpen, setIsImportIndicacoesModalOpen] = useState(false);
   const [isConsultorModalOpen, setIsConsultorModalOpen] = useState(false);
@@ -56,11 +57,26 @@ function AdminPage() {
 
   const filteredCandidatos = useMemo(() => {
     if (!candidatos) return [];
-    if (statusFilter === "all") return candidatos;
-    return candidatos.filter(
-      (c) => String(c.status || "").trim().toLowerCase() === statusFilter,
-    );
-  }, [candidatos, statusFilter]);
+    return candidatos.filter((c) => {
+      const matchesStatus =
+        statusFilter === "all" ||
+        String(c.status || "").trim().toLowerCase() === statusFilter;
+      const matchesConsultor =
+        consultorFilter === "all" ||
+        (c.consultor_responsavel || "").trim() === consultorFilter;
+      return matchesStatus && matchesConsultor;
+    });
+  }, [candidatos, statusFilter, consultorFilter]);
+
+  const consultorResumo = useMemo(() => {
+    if (consultorFilter === "all" || !candidatos) return null;
+    const ativos = candidatos.filter(
+      (c) =>
+        (c.consultor_responsavel || "").trim() === consultorFilter &&
+        String(c.status || "").trim().toLowerCase() === "ativo",
+    ).length;
+    return { nome: consultorFilter, ativos };
+  }, [candidatos, consultorFilter]);
 
   const consultores = useMemo(() => {
     const names = new Set(
@@ -235,8 +251,30 @@ function AdminPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={consultorFilter} onValueChange={setConsultorFilter}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Todos os consultores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os consultores</SelectItem>
+                  {consultores.map((nome) => (
+                    <SelectItem key={nome} value={nome}>
+                      {nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
+          {consultorResumo && (
+            <div className="px-6 py-3 border-b border-border bg-[#F0EBF5]">
+              <p className="text-sm font-medium text-primary">
+                Consultor: {consultorResumo.nome} — {consultorResumo.ativos} candidatos ativos
+              </p>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             {isLoadingCandidatos ? (

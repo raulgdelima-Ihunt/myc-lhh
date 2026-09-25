@@ -1,5 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGuard } from "@/components/auth-guard";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,19 @@ function CandidatoDetail() {
 
   const { data: candidato, isLoading: isLoadingCandidato, refetch: refetchCandidato } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes, refetch: refetchIndicacoes } = useCandidatoIndicacoes(id);
+
+  const { data: conector } = useQuery({
+    queryKey: ["conector", candidato?.conector_id],
+    enabled: !!candidato?.conector_id,
+    queryFn: async () => {
+      const { data: c } = await supabase
+        .from("conectores")
+        .select("nome, email")
+        .eq("id", candidato!.conector_id!)
+        .maybeSingle();
+      return c;
+    },
+  });
 
   const handleStatusChange = async (nextStatus: string) => {
     setIsSavingStatus(true);
@@ -254,6 +268,10 @@ function CandidatoDetail() {
                   <h1 className="text-3xl font-bold text-[#333333] tracking-tight">{candidato?.nome}</h1>
 
                   <p className="text-[#666666] font-medium">{candidato?.email || "E-mail não informado"}</p>
+                  <p className="text-sm text-[#666666]">
+                    Conector: <span className="font-medium text-[#333333]">{conector ? conector.nome : "não atribuído"}</span>
+                    {conector?.email && <span className="text-[#666666]"> — {conector.email}</span>}
+                  </p>
                   <div className="flex flex-wrap gap-2 mt-4">
                     <span className="text-xs bg-[#F5F5F5] text-[#666666] px-3 py-1 rounded-full font-semibold border border-border">
                       {(candidato as any)?.area}
