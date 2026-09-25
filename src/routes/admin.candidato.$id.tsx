@@ -1,5 +1,6 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthGuard } from "@/components/auth-guard";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,19 @@ function CandidatoDetail() {
 
   const { data: candidato, isLoading: isLoadingCandidato, refetch: refetchCandidato } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes, refetch: refetchIndicacoes } = useCandidatoIndicacoes(id);
+
+  const { data: conector } = useQuery({
+    queryKey: ["conector", candidato?.conector_id],
+    enabled: !!candidato?.conector_id,
+    queryFn: async () => {
+      const { data: c } = await supabase
+        .from("conectores")
+        .select("nome, email")
+        .eq("id", candidato!.conector_id!)
+        .maybeSingle();
+      return c;
+    },
+  });
 
   const handleStatusChange = async (nextStatus: string) => {
     setIsSavingStatus(true);
