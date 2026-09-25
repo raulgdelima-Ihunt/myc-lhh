@@ -19,6 +19,7 @@ export type Database = {
           area: string | null
           carta_apresentacao: string | null
           complemento_situacao_dte: string | null
+          conector_id: string | null
           consultor_responsavel: string | null
           created_at: string | null
           cv_candidato: string | null
@@ -70,6 +71,7 @@ export type Database = {
           area?: string | null
           carta_apresentacao?: string | null
           complemento_situacao_dte?: string | null
+          conector_id?: string | null
           consultor_responsavel?: string | null
           created_at?: string | null
           cv_candidato?: string | null
@@ -121,6 +123,7 @@ export type Database = {
           area?: string | null
           carta_apresentacao?: string | null
           complemento_situacao_dte?: string | null
+          conector_id?: string | null
           consultor_responsavel?: string | null
           created_at?: string | null
           cv_candidato?: string | null
@@ -168,7 +171,15 @@ export type Database = {
           ultimo_salario?: string | null
           ultimo_segmento?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "candidatos_conector_id_fkey"
+            columns: ["conector_id"]
+            isOneToOne: false
+            referencedRelation: "conectores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conectores: {
         Row: {
