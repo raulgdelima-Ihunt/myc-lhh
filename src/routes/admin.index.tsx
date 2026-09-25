@@ -110,43 +110,28 @@ function AdminPage() {
     <div className="min-h-screen bg-[#F5F5F5] p-8">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <div className="flex items-center justify-between rounded-xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border mb-8">
-          <div className="flex items-center gap-4">
-            <img src="/logo.svg" alt="LHH" className="w-[120px] h-auto" />
-            <div>
-              <h1 className="text-2xl font-bold text-[#333333]">Painel Administrativo</h1>
-              <div className="mt-1 flex items-center text-sm text-[#666666]">
-                <User size={16} className="mr-1.5" />
-                <span>Logado como: {user?.email}</span>
+        <div className="rounded-xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <img src="/logo.svg" alt="LHH" className="w-[120px] h-auto" />
+              <div>
+                <h1 className="text-2xl font-bold text-[#333333]">Painel Administrativo</h1>
+                <div className="mt-1 flex items-center text-sm text-[#666666]">
+                  <User size={16} className="mr-1.5" />
+                  <span>Logado como: {user?.email}</span>
+                </div>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center rounded-[6px] border border-border px-4 py-2 text-sm font-medium text-[#666666] transition hover:bg-gray-50"
+            >
+              <LogOut size={18} className="mr-2" />
+              Sair
+            </button>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => setIsConsultorModalOpen(true)}
-              variant="outline"
-              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
-            >
-              <UserCog size={18} className="mr-2" />
-              Criar acesso consultor
-            </Button>
-            <Button
-              onClick={() => setIsConectoresModalOpen(true)}
-              variant="outline"
-              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
-            >
-              <Network size={18} className="mr-2" />
-              Conectores
-            </Button>
-            <Button
-              onClick={() => setIsDuplicatasModalOpen(true)}
-              variant="outline"
-              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
-            >
-              <CopyX size={18} className="mr-2" />
-              Limpar Duplicatas Antigas
-            </Button>
+          <div className="mt-5 flex flex-wrap gap-3 border-t border-border pt-5">
             <Button
               onClick={() => setIsImportModalOpen(true)}
               className="bg-primary hover:bg-[#5A2574] text-white rounded-[6px]"
@@ -162,13 +147,30 @@ function AdminPage() {
               <Briefcase size={18} className="mr-2" />
               Importar Indicações
             </Button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center rounded-[6px] border border-border px-4 py-2 text-sm font-medium text-[#666666] transition hover:bg-gray-50"
+            <Button
+              onClick={() => setIsConectoresModalOpen(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
             >
-              <LogOut size={18} className="mr-2" />
-              Sair
-            </button>
+              <Network size={18} className="mr-2" />
+              Conectores
+            </Button>
+            <Button
+              onClick={() => setIsConsultorModalOpen(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
+            >
+              <UserCog size={18} className="mr-2" />
+              Criar acesso consultor
+            </Button>
+            <Button
+              onClick={() => setIsDuplicatasModalOpen(true)}
+              variant="outline"
+              className="border-primary text-primary hover:bg-[#F0EBF5] rounded-[6px]"
+            >
+              <CopyX size={18} className="mr-2" />
+              Limpar Duplicatas Antigas
+            </Button>
           </div>
         </div>
 
