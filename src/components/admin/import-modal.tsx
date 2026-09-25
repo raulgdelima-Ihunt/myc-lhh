@@ -219,7 +219,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const idxParceiro = getColumnIndex(["parceiro"]);
 
       // New columns mapping
-      const idxReferral = getColumnIndex(["REFERRAL"]);
+      const idxReferralId = getExactColumnIndex(["REFERRAL ID"]);
+      const idxReferral = idxReferralId !== -1 ? idxReferralId : getColumnIndex(["REFERRAL"]);
       const idxDistribuicao = getColumnIndex(["DISTRIBUIÇÃO"]);
       const idxLinkedin = getColumnIndex(["LINKEDIN"]);
       const idxInicio = getColumnIndex(["INÍCIO"]);
@@ -488,6 +489,37 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           ? `ref:${String(c.referral_id)}`
           : `nome:${c.nome_normalizado}`;
         uniqueRows.set(key, c);
+      });
+
+      // Resolve Talent -> conector_id (case/accent-insensitive), creating missing conectores
+      const normCon = (s: string) =>
+        s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+      const { data: conectoresDb, error: conErr } = await supabase
+        .from("conectores")
+        .select("id, nome");
+      if (conErr) throw conErr;
+      const conMap = new Map<string, string>();
+      (conectoresDb ?? []).forEach((c: any) => conMap.set(normCon(c.nome), c.id));
+      const talentNames = new Map<string, string>();
+      uniqueRows.forEach((c) => {
+        if (c.talent) talentNames.set(normCon(String(c.talent)), String(c.talent).trim());
+      });
+      for (const [key, nome] of talentNames) {
+        if (conMap.has(key)) continue;
+        console.warn(`[Importação] Conector "${nome}" não encontrado — criando automaticamente.`);
+        const { data: novo, error } = await supabase
+          .from("conectores")
+          .insert({ nome, email: "" })
+          .select("id")
+          .single();
+        if (error) {
+          console.warn(`[Importação] Falha ao criar conector "${nome}":`, error.message);
+          continue;
+        }
+        conMap.set(key, novo.id);
+      }
+      uniqueRows.forEach((c) => {
+        c.conector_id = c.talent ? conMap.get(normCon(String(c.talent))) ?? null : null;
       });
 
       const toInsert: any[] = [];
