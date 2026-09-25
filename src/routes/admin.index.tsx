@@ -305,6 +305,7 @@ function AdminPage() {
               <Table>
                 <TableHeader className="bg-[#F5F5F5]">
                   <TableRow>
+                    <TableHead className="font-semibold">Referral</TableHead>
                     <TableHead className="font-semibold">Nome</TableHead>
                     <TableHead className="font-semibold">E-mail</TableHead>
                     <TableHead className="font-semibold">Área</TableHead>
