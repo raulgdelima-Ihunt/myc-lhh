@@ -314,6 +314,13 @@ function CandidatoDetail() {
                     </Button>
                   )}
                   
+                  <div className="rounded-lg border-2 border-primary bg-[#F0EBF5] px-4 py-2 text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Código de login</p>
+                    <p className="select-all font-mono text-lg font-bold text-primary">
+                      {(candidato as any)?.referral_id || "Sem Referral ID"}
+                    </p>
+                  </div>
+
                   {hasAccess && !tempPassword && (
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <div className="flex items-center gap-2 text-[#4CAF50] bg-green-50 px-4 py-2 rounded-lg border border-green-100 font-bold text-sm">
@@ -343,7 +350,7 @@ function CandidatoDetail() {
                         Anote e envie estas credenciais ao candidato:
                       </p>
                       <div className="mt-3 space-y-2 bg-white/50 p-3 rounded-lg border border-amber-100">
-                        <p className="text-xs text-[#666666] font-medium">E-mail: <span className="text-[#333333] select-all font-bold">{candidato?.email}</span></p>
+                        <p className="text-xs text-[#666666] font-medium">Código Referral (login): <span className="text-primary select-all font-bold text-base">{(candidato as any)?.referral_id || "— sem código —"}</span></p>
                         <p className="text-xs text-[#666666] font-medium">Senha temporária: <span className="text-primary font-bold select-all text-sm">{tempPassword}</span></p>
                       </div>
                     </div>
