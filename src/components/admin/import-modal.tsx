@@ -71,16 +71,13 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       .trim()
       .toLowerCase();
 
-  const inferNivelCargo = (values: unknown[]) => {
-    const text = normalizeHeader(values.filter(Boolean).join(" "));
-    if (!text) return null;
-
-    if (/\b(c[-\s]?level|ceo|cfo|coo|cio|cto|chro|cmo|chief|presidente|vice presidente|vp)\b/.test(text)) {
-      return "C-Level";
-    }
-    if (/\b(diretor|diretora|director|head|superintendente)\b/.test(text)) return "Diretor";
-    if (/\b(gerente|gerencia|manager)\b/.test(text)) return "Gerente";
-    if (/\b(coordenador|coordenadora|coordenacao|coordinator|supervisor)\b/.test(text)) return "Coordenador";
+  const inferNivelCargo = (posicao: unknown) => {
+    const text = normalizeHeader(String(posicao ?? ""));
+    if (!text || text.includes("nenhum cargo encontrado")) return "Não identificado";
+    if (/\b(ceo|cfo|coo|cto|cmo|chro|vp|vice[- ]presidente|presidente|c[- ]level|chief)\b/.test(text)) return "C-Level";
+    if (/\b(diretor|diretora)\b/.test(text)) return "Diretor";
+    if (/\b(gerente|head|lider|superintendente)\b/.test(text)) return "Gerente";
+    if (/\b(coordenador|coordenadora|supervisor|supervisora)\b/.test(text)) return "Coordenador";
     return "Especialista";
   };
 
