@@ -251,8 +251,30 @@ function AdminPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={consultorFilter} onValueChange={setConsultorFilter}>
+                <SelectTrigger className="w-[220px]">
+                  <SelectValue placeholder="Todos os consultores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os consultores</SelectItem>
+                  {consultores.map((nome) => (
+                    <SelectItem key={nome} value={nome}>
+                      {nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
+          {consultorResumo && (
+            <div className="px-6 py-3 border-b border-border bg-[#F0EBF5]">
+              <p className="text-sm font-medium text-primary">
+                Consultor: {consultorResumo.nome} — {consultorResumo.ativos} candidatos ativos
+              </p>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             {isLoadingCandidatos ? (
