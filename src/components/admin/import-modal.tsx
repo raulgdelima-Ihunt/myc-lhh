@@ -497,7 +497,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       for (let i = 0; i < toInsert.length; i += chunkSize) {
         const { error } = await supabase
           .from("candidatos")
-          .insert(toInsert.slice(i, i + chunkSize) as any);
+          .upsert(toInsert.slice(i, i + chunkSize) as any, { onConflict: "referral_id" });
         if (error) throw error;
       }
 
