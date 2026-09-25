@@ -170,6 +170,33 @@ export type Database = {
         }
         Relationships: []
       }
+      conectores: {
+        Row: {
+          ativo: boolean
+          created_at: string | null
+          email: string
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string | null
+          email: string
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string | null
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       indicacoes: {
         Row: {
           acao_tipo: string | null
