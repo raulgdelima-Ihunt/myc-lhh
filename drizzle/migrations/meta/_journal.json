@@ -29,6 +29,13 @@
       "when": 1790351931294,
       "tag": "0003_candidatos_conector_id",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790352077402,
+      "tag": "0004_create_solicitacoes_reforco",
+      "breakpoints": true
     }
   ]
 }

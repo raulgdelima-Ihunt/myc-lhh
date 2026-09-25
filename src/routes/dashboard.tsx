@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { AuthGuard } from "@/components/auth-guard";
-import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink, KeyRound } from "lucide-react";
+import { LogOut, Search, Briefcase, Building2, Calendar, LayoutDashboard, ExternalLink, KeyRound, Send, AlertTriangle } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useCandidateDashboard } from "@/hooks/use-candidato-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,8 +51,56 @@ function DashboardPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isReforcoOpen, setIsReforcoOpen] = useState(false);
+  const [reforcoTitulo, setReforcoTitulo] = useState("");
+  const [reforcoEmpresa, setReforcoEmpresa] = useState("");
+  const [reforcoLink, setReforcoLink] = useState("");
+  const [reforcoObs, setReforcoObs] = useState("");
+  const [isSendingReforco, setIsSendingReforco] = useState(false);
+  const [reforcoEnviado, setReforcoEnviado] = useState(false);
 
   const { data, isLoading, error } = useCandidateDashboard(user?.email || "");
+
+  const { data: conector } = useQuery({
+    queryKey: ["conector", data?.candidato.conector_id],
+    enabled: !!data?.candidato.conector_id,
+    queryFn: async () => {
+      const { data: c } = await supabase
+        .from("conectores")
+        .select("nome, email")
+        .eq("id", data!.candidato.conector_id!)
+        .maybeSingle();
+      return c;
+    },
+  });
+
+  const handleEnviarReforco = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data?.candidato.id) return;
+    setIsSendingReforco(true);
+    const { error: insertError } = await supabase.from("solicitacoes_reforco").insert({
+      candidato_id: data.candidato.id,
+      titulo_vaga: reforcoTitulo.trim(),
+      empresa: reforcoEmpresa.trim(),
+      link_vaga: reforcoLink.trim() || null,
+      observacoes: reforcoObs.trim() || null,
+    });
+    setIsSendingReforco(false);
+    if (insertError) {
+      toast.error("Não foi possível registrar a solicitação. Tente novamente.");
+      return;
+    }
+    setReforcoEnviado(true);
+  };
+
+  const closeReforcoModal = () => {
+    setIsReforcoOpen(false);
+    setReforcoEnviado(false);
+    setReforcoTitulo("");
+    setReforcoEmpresa("");
+    setReforcoLink("");
+    setReforcoObs("");
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -248,6 +298,16 @@ function DashboardPage() {
               </div>
 
 
+              {/* Banner links expirados */}
+              <div className="mb-6 flex items-start gap-3 rounded-[6px] border-l-4 border-[#FF9800] bg-[#FFF3E0] p-4">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#FF9800]" />
+                <p className="text-sm text-[#333333]">
+                  Os links das vagas publicadas podem expirar sem aviso prévio, pois dependem da
+                  disponibilidade no site da empresa. Caso um link não funcione, entre em contato
+                  com seu conector.
+                </p>
+              </div>
+
               {/* Filters & Table */}
               <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
                 <div className="p-6 border-b border-border space-y-4 md:space-y-0 md:flex md:items-center md:justify-between gap-4">
@@ -261,6 +321,14 @@ function DashboardPage() {
                     />
                   </div>
                   <div className="flex flex-wrap gap-3">
+                    <Button
+                      type="button"
+                      onClick={() => setIsReforcoOpen(true)}
+                      className="h-10 rounded-[6px] bg-[#6B2D8B] px-4 text-sm font-medium text-white hover:bg-[#5a2576]"
+                    >
+                      <Send size={16} />
+                      Solicitar Reforço de Candidatura
+                    </Button>
                     <Select value={monthFilter} onValueChange={setMonthFilter}>
                       <SelectTrigger className="w-[160px] focus:ring-primary">
                         <SelectValue placeholder="Mês" />
@@ -400,6 +468,81 @@ function DashboardPage() {
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isReforcoOpen} onOpenChange={(open) => (open ? setIsReforcoOpen(true) : closeReforcoModal())}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Solicitar Reforço de Candidatura</DialogTitle>
+            </DialogHeader>
+            {reforcoEnviado ? (
+              <div className="space-y-4">
+                <div className="rounded-[6px] border border-green-200 bg-green-50 p-4">
+                  <p className="text-sm text-[#333333]">
+                    {conector
+                      ? `Solicitação registrada. Para agilizar, envie os detalhes diretamente para seu conector: ${conector.nome} — ${conector.email}`
+                      : "Solicitação registrada. Entre em contato com a equipe MyCareer para acompanhamento."}
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <Button type="button" onClick={closeReforcoModal}>Fechar</Button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleEnviarReforco} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">Título da Vaga *</label>
+                  <Input
+                    value={reforcoTitulo}
+                    onChange={(e) => setReforcoTitulo(e.target.value)}
+                    required
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">Empresa *</label>
+                  <Input
+                    value={reforcoEmpresa}
+                    onChange={(e) => setReforcoEmpresa(e.target.value)}
+                    required
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">Link da Vaga (opcional)</label>
+                  <Input
+                    type="url"
+                    value={reforcoLink}
+                    onChange={(e) => setReforcoLink(e.target.value)}
+                    maxLength={500}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-[#333333]">
+                    Observações — por que você é aderente a esta posição (opcional)
+                  </label>
+                  <Textarea
+                    value={reforcoObs}
+                    onChange={(e) => setReforcoObs(e.target.value)}
+                    rows={4}
+                    maxLength={1000}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={closeReforcoModal} disabled={isSendingReforco}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={isSendingReforco}
+                    className="bg-[#6B2D8B] text-white hover:bg-[#5a2576]"
+                  >
+                    {isSendingReforco ? "Enviando..." : "Enviar Solicitação"}
+                  </Button>
+                </div>
+              </form>
+            )}
           </DialogContent>
         </Dialog>
       </div>

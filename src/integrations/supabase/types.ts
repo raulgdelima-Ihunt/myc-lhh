@@ -276,6 +276,44 @@ export type Database = {
           },
         ]
       }
+      solicitacoes_reforco: {
+        Row: {
+          candidato_id: string
+          created_at: string | null
+          empresa: string
+          id: string
+          link_vaga: string | null
+          observacoes: string | null
+          titulo_vaga: string
+        }
+        Insert: {
+          candidato_id: string
+          created_at?: string | null
+          empresa: string
+          id?: string
+          link_vaga?: string | null
+          observacoes?: string | null
+          titulo_vaga: string
+        }
+        Update: {
+          candidato_id?: string
+          created_at?: string | null
+          empresa?: string
+          id?: string
+          link_vaga?: string | null
+          observacoes?: string | null
+          titulo_vaga?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_reforco_candidato_id_fkey"
+            columns: ["candidato_id"]
+            isOneToOne: false
+            referencedRelation: "candidatos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
