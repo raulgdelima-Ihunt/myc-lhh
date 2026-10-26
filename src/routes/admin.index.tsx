@@ -28,6 +28,12 @@ import { ConectoresModal } from "@/components/admin/conectores-modal";
 import { DuplicatasModal } from "@/components/admin/duplicatas-modal";
 import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
 
+const isEmailValido = (email: string | null | undefined): boolean => {
+  if (!email) return false;
+  const trimmed = email.trim();
+  return trimmed.length > 3 && trimmed.includes("@") && trimmed.includes(".");
+};
+
 export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
@@ -360,7 +366,19 @@ function AdminPage() {
                         <TableCell className="text-[#666666]">{c.referral_id || "-"}</TableCell>
                         <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
                         <TableCell className="text-[#666666]">
-                          {c.email ? c.email : <span className="text-gray-300 italic text-sm">Sem e-mail</span>}
+                          {c.email ? (
+                            isEmailValido(c.email) ? (
+                              c.email
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[#F44336] italic text-sm" title="E-mail em formato inválido">
+                                <MailWarning size={13} /> E-mail inválido
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[#F44336] italic text-sm" title="Sem e-mail cadastrado">
+                              <MailWarning size={13} /> Sem e-mail
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="text-[#666666]">{c.area || "-"}</TableCell>
                         <TableCell className="text-[#666666]">{c.nivel_cargo || "-"}</TableCell>

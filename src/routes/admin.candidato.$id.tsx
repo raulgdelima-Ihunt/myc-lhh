@@ -185,15 +185,24 @@ function CandidatoDetail() {
     };
   }, [candidato?.email]);
 
+  const isEmailValido = (email: string | null | undefined): boolean => {
+    if (!email) return false;
+    const trimmed = email.trim();
+    return trimmed.length > 3 && trimmed.includes("@") && trimmed.includes(".");
+  };
+
   const handleCreateAccess = async () => {
-    if (!candidato?.email) return;
+    if (!isEmailValido(candidato?.email)) {
+      toast.error("Não é possível criar acesso: este candidato não possui um e-mail válido cadastrado. Verifique os dados na planilha de importação.");
+      return;
+    }
     setIsCreating(true);
     const pass = Math.random().toString(36).slice(-8);
     
     try {
       await createCandidateAccess({
         data: {
-          email: candidato.email,
+          email: candidato!.email,
           password: pass,
         }
       });
@@ -267,7 +276,13 @@ function CandidatoDetail() {
                 <div className="space-y-1">
                   <h1 className="text-3xl font-bold text-[#333333] tracking-tight">{candidato?.nome}</h1>
 
-                  <p className="text-[#666666] font-medium">{candidato?.email || "E-mail não informado"}</p>
+                  <p className={`font-medium ${isEmailValido(candidato?.email) ? "text-[#666666]" : "text-[#F44336]"}`}>
+                    {candidato?.email
+                      ? isEmailValido(candidato.email)
+                        ? `Email: ${candidato.email}`
+                        : `Email: ${candidato.email} (formato inválido)`
+                      : "Email: não informado"}
+                  </p>
                   <p className="text-sm text-[#666666]">
                     Conector: <span className="font-medium text-[#333333]">{conector ? conector.nome : "não atribuído"}</span>
                     {conector?.email && <span className="text-[#666666]"> — {conector.email}</span>}
@@ -321,7 +336,7 @@ function CandidatoDetail() {
                 </div>
 
                 <div className="flex flex-col items-end gap-3">
-                  {candidato?.email && hasAccess === false && !tempPassword && (
+                  {hasAccess === false && !tempPassword && (
                     <Button 
                       onClick={handleCreateAccess} 
                       disabled={isCreating} 
