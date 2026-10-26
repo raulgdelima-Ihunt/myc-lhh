@@ -83,6 +83,9 @@ function CandidatoDetail() {
   const [editingIndicacao, setEditingIndicacao] = useState<any | null>(null);
   const [isSavingIndicacao, setIsSavingIndicacao] = useState(false);
   const [deletingIndicacaoId, setDeletingIndicacaoId] = useState<string | null>(null);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
 
   const { data: candidato, isLoading: isLoadingCandidato, refetch: refetchCandidato } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes, refetch: refetchIndicacoes } = useCandidatoIndicacoes(id);
@@ -191,6 +194,29 @@ function CandidatoDetail() {
     return trimmed.length > 3 && trimmed.includes("@") && trimmed.includes(".");
   };
 
+  const handleSaveEmail = async () => {
+    const novoEmail = emailDraft.trim().toLowerCase();
+    if (!isEmailValido(novoEmail)) {
+      toast.error("Informe um e-mail válido (deve conter @ e ponto).");
+      return;
+    }
+    setIsSavingEmail(true);
+    const { error } = await supabase.from("candidatos").update({ email: novoEmail }).eq("id", id);
+    setIsSavingEmail(false);
+
+    if (error) {
+      toast.error("Não foi possível salvar o e-mail: " + error.message);
+      return;
+    }
+
+    setIsEditingEmail(false);
+    toast.success("Email atualizado com sucesso");
+    if (hasAccess) {
+      toast.warning("Atenção: o email de login permanece inalterado. Para alterar o login, entre em contato com o suporte.");
+    }
+    await refetchCandidato();
+  };
+
   const handleCreateAccess = async () => {
     if (!isEmailValido(candidato?.email)) {
       toast.error("Não é possível criar acesso: este candidato não possui um e-mail válido cadastrado. Verifique os dados na planilha de importação.");
@@ -276,13 +302,52 @@ function CandidatoDetail() {
                 <div className="space-y-1">
                   <h1 className="text-3xl font-bold text-[#333333] tracking-tight">{candidato?.nome}</h1>
 
-                  <p className={`font-medium ${isEmailValido(candidato?.email) ? "text-[#666666]" : "text-[#F44336]"}`}>
-                    {candidato?.email
-                      ? isEmailValido(candidato.email)
-                        ? `Email: ${candidato.email}`
-                        : `Email: ${candidato.email} (formato inválido)`
-                      : "Email: não informado"}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    {isEditingEmail ? (
+                      <>
+                        <Input
+                          value={emailDraft}
+                          onChange={(e) => setEmailDraft(e.target.value)}
+                          placeholder="Email do candidato"
+                          className="h-8 w-64 text-sm"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={handleSaveEmail}
+                          disabled={isSavingEmail}
+                          className="h-8 rounded-[6px] bg-primary px-3 text-white hover:bg-[#5A2574]"
+                        >
+                          {isSavingEmail && <Loader2 size={14} className="animate-spin mr-1" />}
+                          Salvar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setIsEditingEmail(false); setEmailDraft(""); }}
+                          className="h-8 rounded-[6px] px-3"
+                        >
+                          Cancelar
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <p className={`font-medium ${isEmailValido(candidato?.email) ? "text-[#666666]" : "text-[#F44336]"}`}>
+                          {candidato?.email
+                            ? isEmailValido(candidato.email)
+                              ? `Email: ${candidato.email}`
+                              : `Email: ${candidato.email} (formato inválido)`
+                            : "Email: não informado"}
+                        </p>
+                        <button
+                          onClick={() => { setEmailDraft(candidato?.email || ""); setIsEditingEmail(true); }}
+                          className="text-[#6B2D8B] transition hover:text-[#5A2574]"
+                          title="Editar email"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                   <p className="text-sm text-[#666666]">
                     Conector: <span className="font-medium text-[#333333]">{conector ? conector.nome : "não atribuído"}</span>
                     {conector?.email && <span className="text-[#666666]"> — {conector.email}</span>}
