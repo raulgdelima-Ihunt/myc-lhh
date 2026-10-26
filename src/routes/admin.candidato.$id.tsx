@@ -202,7 +202,7 @@ function CandidatoDetail() {
     try {
       await createCandidateAccess({
         data: {
-          email: candidato.email,
+          email: candidato!.email,
           password: pass,
         }
       });
