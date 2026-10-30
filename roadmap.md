@@ -2,3 +2,5 @@
 - [x] Melhorar extração de área e nível na importação de candidatos.
 - [x] Renomear Jobhunter para Conector no admin e importar a nova primeira coluna.
 - [x] Trocar o rodapé e adicionar botão de WhatsApp em todas as telas.
+- [x] Bloquear a importação de sobrescrever dados reais com valores de lixo (e-mail e área).
+
