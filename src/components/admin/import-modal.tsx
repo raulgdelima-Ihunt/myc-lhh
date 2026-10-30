@@ -555,7 +555,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         if (existing) {
           const updates = stripEmptyUpdateValues(c, existing);
           if (Object.keys(updates).length > 0) {
-            toUpdate.push({ id: existing.id, row: updates });
+            toUpdate.push({ id: existing["id"], row: updates });
           } else {
             console.warn(
               `[Importação] Nenhum campo novo para atualizar em "${c.nome}" (referral ${c.referral_id}).`,
