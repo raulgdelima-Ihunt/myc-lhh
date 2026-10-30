@@ -157,8 +157,8 @@ function CandidatoDetail() {
     setIsSavingIndicacao(false);
   };
 
-  const handleDeleteIndicacao = async (indicacaoId: string) => {
-    if (!window.confirm("Excluir esta indicação? Esta ação não pode ser desfeita.")) return;
+  const handleDeleteIndicacao = async (indicacaoId: string, label?: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir ${label ? `a indicação "${label}"` : "esta indicação"}? Esta ação não pode ser desfeita.`)) return;
 
     setDeletingIndicacaoId(indicacaoId);
     const { error } = await supabase.from("indicacoes").delete().eq("id", indicacaoId);
@@ -594,7 +594,7 @@ function CandidatoDetail() {
                                 size="icon"
                                 title="Excluir indicação"
                                 disabled={deletingIndicacaoId === i.id}
-                                onClick={() => handleDeleteIndicacao(i.id)}
+                                onClick={() => handleDeleteIndicacao(i.id, `${i.vaga} — ${i.empresa}`)}
                               >
                                 {deletingIndicacaoId === i.id ? (
                                   <Loader2 size={16} className="animate-spin text-[#666666]" />

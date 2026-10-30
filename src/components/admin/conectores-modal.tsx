@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, Power } from "lucide-react";
+import { Loader2, Pencil, Plus, Power, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conector {
@@ -126,6 +126,20 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
     }
   };
 
+  const handleExcluir = async (c: Conector) => {
+    if (!window.confirm(`Tem certeza que deseja excluir ${c.nome}? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await supabase
+      .from("conectores")
+      .update({ ativo: false, updated_at: new Date().toISOString() })
+      .eq("id", c.id);
+    if (error) {
+      toast.error("Não foi possível excluir: " + error.message);
+    } else {
+      toast.success(`${c.nome} foi inativado.`);
+      await loadConectores();
+    }
+  };
+
   const startEdit = (c: Conector) => {
     setEditing(c);
     setNome(c.nome);
@@ -181,7 +195,7 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
                     <TableHead className="font-semibold"><ColumnFilter label="Nome" values={colFilters.valuesFor("nome")} selected={colFilters.filters["nome"]} onChange={(v) => colFilters.setFilter("nome", v)} /></TableHead>
                     <TableHead className="font-semibold"><ColumnFilter label="E-mail" values={colFilters.valuesFor("email")} selected={colFilters.filters["email"]} onChange={(v) => colFilters.setFilter("email", v)} /></TableHead>
                     <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} align="end" /></TableHead>
-                    <TableHead className="w-[100px] font-semibold">Ações</TableHead>
+                    <TableHead className="w-[140px] font-semibold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -219,6 +233,15 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
                             <Power
                               className={`h-4 w-4 ${c.ativo ? "text-red-500" : "text-green-600"}`}
                             />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleExcluir(c)}
+                            title="Excluir"
+                            aria-label={`Excluir ${c.nome}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       </TableCell>

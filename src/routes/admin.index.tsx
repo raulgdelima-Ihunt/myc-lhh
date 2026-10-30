@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase, UserCog, Network, CopyX } from "lucide-react";
+import { LogOut, User, Users, Mail, MailWarning, Search, FileSpreadsheet, Loader2, Briefcase, UserCog, Network, CopyX, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -135,6 +137,18 @@ function AdminPage() {
     );
     return Array.from(names).sort();
   }, [candidatos]);
+
+  const handleInativarCandidato = async (id: string, nome: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir ${nome}? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await supabase.from("candidatos").update({ status: "inativo_termino" }).eq("id", id);
+    if (error) {
+      toast.error("Não foi possível excluir: " + error.message);
+      return;
+    }
+    toast.success(`${nome} foi inativado(a).`);
+    refetchCandidatos();
+    refetchStats();
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -373,6 +387,7 @@ function AdminPage() {
                     <TableHead className="font-semibold"><ColumnFilter label="Nível de Cargo" values={colFilters.valuesFor("nivel")} selected={colFilters.filters["nivel"]} onChange={(v) => colFilters.setFilter("nivel", v)} /></TableHead>
                     <TableHead className="font-semibold"><ColumnFilter label="Consultor" values={colFilters.valuesFor("consultor")} selected={colFilters.filters["consultor"]} onChange={(v) => colFilters.setFilter("consultor", v)} /></TableHead>
                     <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} align="end" /></TableHead>
+                    <TableHead className="w-[60px] font-semibold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -408,6 +423,18 @@ function AdminPage() {
                           <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${statusMeta.badgeClass}`}>
                             {statusMeta.label}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title="Excluir candidato"
+                            aria-label={`Excluir ${c.nome}`}
+                            onClick={(e) => { e.stopPropagation(); handleInativarCandidato(c.id, c.nome); }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
