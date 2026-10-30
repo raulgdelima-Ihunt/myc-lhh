@@ -229,9 +229,6 @@ function DashboardPage() {
                   <p className="text-sm font-medium text-[#333333]">
                     Seu Conector: {conector ? conector.nome : "não atribuído"}
                   </p>
-                  {conector?.email && (
-                    <p className="text-sm text-[#666666]">{conector.email}</p>
-                  )}
                 </div>
               </div>
 
@@ -453,28 +450,15 @@ function DashboardPage() {
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm leading-relaxed text-[#333333]">
-                Para solicitar o reforço da sua candidatura em uma vaga específica, envie um
-                e-mail para o seu conector informando: o título da vaga, a empresa, o link (se
-                disponível) e por que você é aderente à posição.
+                Para solicitar reforço de candidatura, envie um e-mail para a área de Conexões
+                com o título da vaga, a empresa, o link (se disponível) e por que você é aderente
+                à posição.
               </p>
               {conector ? (
-                <div className="space-y-1 rounded-[6px] border border-primary/30 bg-[#F0EBF5] p-4">
+                <div className="rounded-[6px] border border-primary/30 bg-[#F0EBF5] p-4">
                   <p className="text-sm font-semibold text-[#333333]">
                     Seu Conector: <span className="text-primary">{conector.nome}</span>
                   </p>
-                  {conector.email ? (
-                    <p className="text-sm text-[#333333]">
-                      E-mail:{" "}
-                      <a
-                        href={`mailto:${conector.email}`}
-                        className="font-semibold text-primary underline-offset-2 hover:underline"
-                      >
-                        {conector.email}
-                      </a>
-                    </p>
-                  ) : (
-                    <p className="text-sm text-[#666666]">E-mail do conector não cadastrado.</p>
-                  )}
                 </div>
               ) : (
                 <div className="rounded-[6px] border border-amber-200 bg-amber-50 p-4">
