@@ -28,7 +28,7 @@ import { ImportIndicacoesModal } from "@/components/admin/import-indicacoes-moda
 import { CreateConsultorModal } from "@/components/admin/create-consultor-modal";
 import { ConectoresModal } from "@/components/admin/conectores-modal";
 import { DuplicatasModal } from "@/components/admin/duplicatas-modal";
-import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
+import { CANDIDATO_STATUS_OPTIONS, getStatusMeta, toOfficialStatus } from "@/lib/candidato-status";
 import { ColumnFilter, ClearFiltersButton, useColumnFilters } from "@/components/admin/column-filter";
 
 const isEmailValido = (email: string | null | undefined): boolean => {
@@ -71,7 +71,7 @@ function AdminPage() {
     return candidatos.filter((c) => {
       const st = String(c.status || "").trim().toLowerCase();
       const matchesStatus =
-        statusFilter === "all" ? st !== "duplicado" : st === statusFilter;
+        statusFilter === "all" ? st !== "duplicado" : statusFilter === "duplicado" ? st === "duplicado" : toOfficialStatus(st) === statusFilter;
       const matchesConsultor =
         consultorFilter === "all" ||
         (c.consultor_responsavel || "").trim() === consultorFilter;
@@ -102,30 +102,27 @@ function AdminPage() {
     const ativos = candidatos.filter(
       (c) =>
         (c.consultor_responsavel || "").trim() === consultorFilter &&
-        String(c.status || "").trim().toLowerCase() === "ativo",
+        toOfficialStatus(c.status) === "ativo",
     ).length;
     return { nome: consultorFilter, ativos };
   }, [candidatos, consultorFilter]);
 
   const resumoStatus = useMemo(() => {
     const list = candidatos ?? [];
-    const norm = (c: { status?: string | null }) =>
-      String(c.status || "").trim().toLowerCase();
-    const ativo = list.filter((c) => norm(c) === "ativo").length;
-    const ativoDte = list.filter((c) => norm(c) === "ativo no dte").length;
-    const completo = list.filter((c) => norm(c) === "completo").length;
-    const inativo = list.filter((c) =>
-      ["inativo_termino", "inativo_recolocacao", "declinado"].includes(norm(c)),
-    ).length;
-    const duplicado = list.filter((c) => norm(c) === "duplicado").length;
-    return { ativo, ativoDte, completo, inativo, duplicado };
+    const counts = CANDIDATO_STATUS_OPTIONS.map((o) => ({
+      ...o,
+      count: list.filter((c) => toOfficialStatus(c.status) === o.value).length,
+    }));
+    const duplicado = list.filter((c) => String(c.status || "").trim().toLowerCase() === "duplicado").length;
+    return { counts, duplicado };
   }, [candidatos]);
 
   const ativosSemEmail = useMemo(() => {
     const list = candidatos ?? [];
     return list.filter((c) => {
       const st = String(c.status || "").trim().toLowerCase();
-      return (st === "ativo" || st === "ativo no dte") && !isEmailValido(c.email);
+      const off = toOfficialStatus(st);
+      return (off === "ativo" || off === "completo_dte") && !isEmailValido(c.email);
     }).length;
   }, [candidatos]);
 
@@ -140,7 +137,7 @@ function AdminPage() {
 
   const handleInativarCandidato = async (id: string, nome: string) => {
     if (!window.confirm(`Tem certeza que deseja excluir ${nome}? Esta ação não pode ser desfeita.`)) return;
-    const { error } = await supabase.from("candidatos").update({ status: "inativo_termino" }).eq("id", id);
+    const { error } = await supabase.from("candidatos").update({ status: "inativo" }).eq("id", id);
     if (error) {
       toast.error("Não foi possível excluir: " + error.message);
       return;
@@ -244,15 +241,13 @@ function AdminPage() {
                 </div>
               </div>
               <p className="mt-2 text-[12px] leading-snug">
-                <span className="text-[#4CAF50] font-medium">{resumoStatus.ativo} {resumoStatus.ativo === 1 ? "Ativo" : "Ativos"}</span>
-                {" · "}
-                <span className="text-[#66BB6A] font-medium">{resumoStatus.ativoDte} DTE</span>
-                {" · "}
-                <span className="text-[#9E9E9E] font-medium">{resumoStatus.completo} {resumoStatus.completo === 1 ? "Completo" : "Completos"}</span>
-                {" · "}
-                <span className="text-[#FF9800] font-medium">{resumoStatus.inativo} {resumoStatus.inativo === 1 ? "Inativo" : "Inativos"}</span>
-                {" · "}
-                <span className="text-[#F44336] font-medium">{resumoStatus.duplicado} {resumoStatus.duplicado === 1 ? "Duplicado" : "Duplicados"}</span>
+                {resumoStatus.counts.map((o) => (
+                  <span key={o.value}>
+                    <span className="font-medium" style={{ color: o.color }}>{o.count} {o.label}</span>
+                    {" · "}
+                  </span>
+                ))}
+                <span className="text-[#F44336] font-medium">{resumoStatus.duplicado} Duplicado{resumoStatus.duplicado === 1 ? "" : "s"}</span>
               </p>
             </CardContent>
           </Card>
