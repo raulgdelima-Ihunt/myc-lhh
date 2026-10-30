@@ -1,4 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
+import { ColumnFilter, ClearFiltersButton, useColumnFilters } from "@/components/admin/column-filter";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +90,13 @@ function CandidatoDetail() {
 
   const { data: candidato, isLoading: isLoadingCandidato, refetch: refetchCandidato } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes, refetch: refetchIndicacoes } = useCandidatoIndicacoes(id);
+  const indFilters = useColumnFilters(indicacoes ?? [], {
+    vaga: (i) => i.vaga,
+    empresa: (i) => i.empresa,
+    data: (i) => formatActionDate(i.data_acao),
+    resultado: (i) => i.resultado || "Sem retorno",
+    conector: (i) => i.jobhunter,
+  });
 
   const { data: conector } = useQuery({
     queryKey: ["conector", candidato?.conector_id],
@@ -516,8 +524,9 @@ function CandidatoDetail() {
           <div className="bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-border overflow-hidden">
             <div className="p-6 border-b border-border flex items-center justify-between bg-[#FAFAFA]">
               <h2 className="font-bold text-[#333333] text-lg">Histórico de Indicações</h2>
+              <div className="ml-auto mr-3"><ClearFiltersButton show={indFilters.hasActive} onClick={indFilters.clearAll} /></div>
               <span className="text-xs bg-white text-[#666666] px-4 py-1.5 rounded-full font-bold border border-border shadow-sm">
-                {indicacoes?.length || 0} REGISTROS
+                {indFilters.hasActive ? `${indFilters.filtered.length} de ` : ""}{indicacoes?.length || 0} REGISTROS
               </span>
             </div>
             
@@ -531,16 +540,16 @@ function CandidatoDetail() {
                   <table className="w-full text-left border-collapse">
                     <thead className="bg-[#F5F5F5] text-[#666666] text-xs font-bold uppercase tracking-wider">
                       <tr>
-                        <th className="px-6 py-4">Vaga</th>
-                        <th className="px-6 py-4">Empresa</th>
-                        <th className="px-6 py-4 text-center">Data</th>
-                        <th className="px-6 py-4">Resultado</th>
-                        <th className="px-6 py-4">Conector</th>
+                        <th className="px-6 py-4"><ColumnFilter label="Vaga" values={indFilters.valuesFor("vaga")} selected={indFilters.filters["vaga"]} onChange={(v) => indFilters.setFilter("vaga", v)} /></th>
+                        <th className="px-6 py-4"><ColumnFilter label="Empresa" values={indFilters.valuesFor("empresa")} selected={indFilters.filters["empresa"]} onChange={(v) => indFilters.setFilter("empresa", v)} /></th>
+                        <th className="px-6 py-4 text-center"><ColumnFilter label="Data" values={indFilters.valuesFor("data")} selected={indFilters.filters["data"]} onChange={(v) => indFilters.setFilter("data", v)} /></th>
+                        <th className="px-6 py-4"><ColumnFilter label="Resultado" values={indFilters.valuesFor("resultado")} selected={indFilters.filters["resultado"]} onChange={(v) => indFilters.setFilter("resultado", v)} /></th>
+                        <th className="px-6 py-4"><ColumnFilter label="Conector" values={indFilters.valuesFor("conector")} selected={indFilters.filters["conector"]} onChange={(v) => indFilters.setFilter("conector", v)} /></th>
                         <th className="px-6 py-4 text-right">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {indicacoes.map((i, index) => (
+                      {indFilters.filtered.map((i, index) => (
                         <tr key={i.id} className={`transition-colors hover:bg-[#F0EBF5] ${index % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}`}>
                           <td className="px-6 py-4 text-sm font-semibold">
                             {i.vaga_link && i.vaga_link.trim() ? (

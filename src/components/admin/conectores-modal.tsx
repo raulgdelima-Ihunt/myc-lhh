@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ColumnFilter, ClearFiltersButton, useColumnFilters } from "@/components/admin/column-filter";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,11 @@ interface Props {
 
 export function ConectoresModal({ isOpen, onClose }: Props) {
   const [conectores, setConectores] = useState<Conector[]>([]);
+  const colFilters = useColumnFilters(conectores, {
+    nome: (c) => c.nome,
+    email: (c) => c.email,
+    status: (c) => (c.ativo ? "Ativo" : "Inativo"),
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -163,17 +169,23 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
                 <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
               </div>
             ) : conectores.length > 0 ? (
+              <>
+              {colFilters.hasActive && (
+                <div className="mb-2 flex justify-end">
+                  <ClearFiltersButton show onClick={colFilters.clearAll} />
+                </div>
+              )}
               <Table>
                 <TableHeader className="bg-[#F5F5F5]">
                   <TableRow>
-                    <TableHead className="font-semibold">Nome</TableHead>
-                    <TableHead className="font-semibold">E-mail</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Nome" values={colFilters.valuesFor("nome")} selected={colFilters.filters["nome"]} onChange={(v) => colFilters.setFilter("nome", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="E-mail" values={colFilters.valuesFor("email")} selected={colFilters.filters["email"]} onChange={(v) => colFilters.setFilter("email", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} /></TableHead>
                     <TableHead className="w-[100px] font-semibold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {conectores.map((c) => (
+                  {colFilters.filtered.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium text-[#333333]">{c.nome}</TableCell>
                       <TableCell className="text-[#666666]">{c.email}</TableCell>
@@ -214,6 +226,7 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
                   ))}
                 </TableBody>
               </Table>
+              </>
             ) : (
               <p className="p-8 text-center text-sm text-[#666666]">
                 Nenhum conector cadastrado.

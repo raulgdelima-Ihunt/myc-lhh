@@ -27,6 +27,7 @@ import { CreateConsultorModal } from "@/components/admin/create-consultor-modal"
 import { ConectoresModal } from "@/components/admin/conectores-modal";
 import { DuplicatasModal } from "@/components/admin/duplicatas-modal";
 import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
+import { ColumnFilter, ClearFiltersButton, useColumnFilters } from "@/components/admin/column-filter";
 
 const isEmailValido = (email: string | null | undefined): boolean => {
   if (!email) return false;
@@ -76,12 +77,23 @@ function AdminPage() {
     });
   }, [candidatos, statusFilter, consultorFilter]);
 
+  const colFilters = useColumnFilters(filteredCandidatos, {
+    referral: (c) => c.referral_id,
+    nome: (c) => c.nome,
+    email: (c) => (c.email ? (isEmailValido(c.email) ? c.email : "E-mail inválido") : "Sem e-mail"),
+    area: (c) => c.area,
+    nivel: (c) => c.nivel_cargo,
+    consultor: (c) => c.consultor_responsavel,
+    status: (c) => getStatusMeta(c.status).label,
+  });
+  const visibleCandidatos = colFilters.filtered;
+
   const filtrosAtivos =
     searchTerm.trim() !== "" || statusFilter !== "all" || consultorFilter !== "all";
 
   const totalExibindo = useMemo(() => {
-    return filteredCandidatos.length;
-  }, [filteredCandidatos.length]);
+    return visibleCandidatos.length;
+  }, [visibleCandidatos.length]);
 
   const consultorResumo = useMemo(() => {
     if (consultorFilter === "all" || !candidatos) return null;
@@ -336,7 +348,8 @@ function AdminPage() {
           )}
 
           {!isLoadingCandidatos && (
-            <div className="flex justify-end px-6 pt-4 pb-1">
+            <div className="flex items-center justify-end gap-3 px-6 pt-4 pb-1">
+              <ClearFiltersButton show={colFilters.hasActive} onClick={colFilters.clearAll} />
               <p className="text-sm text-[#666666]">
                 Exibindo {totalExibindo} {totalExibindo === 1 ? "candidato" : "candidatos"}
               </p>
@@ -353,17 +366,17 @@ function AdminPage() {
               <Table>
                 <TableHeader className="bg-[#F5F5F5]">
                   <TableRow>
-                    <TableHead className="font-semibold">Referral</TableHead>
-                    <TableHead className="font-semibold">Nome</TableHead>
-                    <TableHead className="font-semibold">E-mail</TableHead>
-                    <TableHead className="font-semibold">Área</TableHead>
-                    <TableHead className="font-semibold">Nível de Cargo</TableHead>
-                    <TableHead className="font-semibold">Consultor</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Referral" values={colFilters.valuesFor("referral")} selected={colFilters.filters["referral"]} onChange={(v) => colFilters.setFilter("referral", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Nome" values={colFilters.valuesFor("nome")} selected={colFilters.filters["nome"]} onChange={(v) => colFilters.setFilter("nome", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="E-mail" values={colFilters.valuesFor("email")} selected={colFilters.filters["email"]} onChange={(v) => colFilters.setFilter("email", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Área" values={colFilters.valuesFor("area")} selected={colFilters.filters["area"]} onChange={(v) => colFilters.setFilter("area", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Nível de Cargo" values={colFilters.valuesFor("nivel")} selected={colFilters.filters["nivel"]} onChange={(v) => colFilters.setFilter("nivel", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Consultor" values={colFilters.valuesFor("consultor")} selected={colFilters.filters["consultor"]} onChange={(v) => colFilters.setFilter("consultor", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} /></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCandidatos.map((c, index) => {
+                  {visibleCandidatos.map((c, index) => {
                     const statusMeta = getStatusMeta(c.status);
                     return (
                       <TableRow 
