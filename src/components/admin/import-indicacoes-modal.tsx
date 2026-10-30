@@ -28,6 +28,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Upload, AlertCircle, CheckCircle2, UserPlus, EyeOff } from "lucide-react";
 import { normalizeNameAggressive, getSimilarCandidates } from "@/lib/string-utils";
+import {
+  daysBetween,
+  detectColumnFormat,
+  formatDateBR,
+  isEntrevistaGerada,
+  normalizeText,
+  resolveSheetDate,
+} from "@/lib/date-utils";
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -50,6 +58,10 @@ interface MappedIndication {
   vinculado: boolean;
   manual_ignore?: boolean;
   importStatus?: "new" | "existing";
+  date_corrected?: boolean;
+  date_invalid?: boolean;
+  /** Existing DB row whose resultado should be upgraded to 'Entrevista gerada'. */
+  upgrade_existing_id?: string | null;
   suggestions?: { id: string; nome: string }[];
 }
 
@@ -59,41 +71,56 @@ function getActionDateForStorage(date: string | null | undefined) {
   return date || DEFAULT_ACTION_DATE;
 }
 
-function getActionDateForDisplay(date: string | null | undefined) {
-  return !date || date === DEFAULT_ACTION_DATE ? "-" : date;
+interface ExistingRow {
+  id: string | null;
+  data_acao: string;
+  resultado: string | null;
 }
 
-function buildDedupKey(
-  candidatoId: string | null | undefined,
-  vaga: string | null | undefined,
-  empresa: string | null | undefined,
-  dataAcao: string | null | undefined,
-) {
-  return [
-    candidatoId || "",
-    String(vaga || "").trim(),
-    String(empresa || "").trim(),
-    getActionDateForStorage(dataAcao),
-  ].join("||");
+function groupKey(candidatoId: string | null | undefined, vaga: string | null | undefined, empresa: string | null | undefined) {
+  return [candidatoId || "", normalizeText(vaga), normalizeText(empresa)].join("||");
 }
 
-function recomputeImportStatus(data: MappedIndication[], existingKeys: Set<string>) {
-  const seenKeys = new Set<string>();
+/** Same candidate + normalized vaga/empresa + data_acao within 3 days = already existing. */
+function findNearby(list: ExistingRow[] | undefined, dataAcao: string) {
+  if (!list) return undefined;
+  return list.find((e) =>
+    e.data_acao === dataAcao ||
+    (e.data_acao !== DEFAULT_ACTION_DATE && dataAcao !== DEFAULT_ACTION_DATE && daysBetween(e.data_acao, dataAcao) <= 3),
+  );
+}
+
+function recomputeImportStatus(data: MappedIndication[], existing: Map<string, ExistingRow[]>) {
+  const seen = new Map<string, ExistingRow[]>();
 
   return data.map((item): MappedIndication => {
     if (!item.vinculado || !item.candidato_id || item.manual_ignore) {
       const itemWithoutStatus = { ...item };
       delete itemWithoutStatus.importStatus;
+      delete itemWithoutStatus.upgrade_existing_id;
       return itemWithoutStatus;
     }
 
     const dataAcao = getActionDateForStorage(item.data_acao);
-    const key = buildDedupKey(item.candidato_id, item.vaga, item.empresa, dataAcao);
-    const importStatus = existingKeys.has(key) || seenKeys.has(key) ? "existing" : "new";
-    seenKeys.add(key);
+    const key = groupKey(item.candidato_id, item.vaga, item.empresa);
+    const dbMatch = findNearby(existing.get(key), dataAcao);
+    const fileMatch = dbMatch ? undefined : findNearby(seen.get(key), dataAcao);
 
-    return { ...item, data_acao: dataAcao, importStatus };
-  });
+    if (dbMatch) {
+      const upgrade = isEntrevistaGerada(item.resultado) && !isEntrevistaGerada(dbMatch.resultado) ? dbMatch.id : null;
+      return { ...item, data_acao: dataAcao, importStatus: "existing", upgrade_existing_id: upgrade };
+    }
+    if (fileMatch) {
+      // Duplicate inside the file: keep the first, but carry over 'Entrevista gerada'
+      if (isEntrevistaGerada(item.resultado)) fileMatch.resultado = item.resultado;
+      return { ...item, data_acao: dataAcao, importStatus: "existing", upgrade_existing_id: null };
+    }
+
+    const list = seen.get(key) ?? [];
+    list.push({ id: null, data_acao: dataAcao, resultado: item.resultado });
+    seen.set(key, list);
+    return { ...item, data_acao: dataAcao, importStatus: "new", upgrade_existing_id: null };
+  }).map((item, _i, arr) => item);
 }
 
 export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
