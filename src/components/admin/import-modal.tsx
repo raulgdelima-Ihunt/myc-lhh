@@ -103,9 +103,17 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
     return rules.find(([pattern]) => pattern.test(text))?.[1] ?? null;
   };
 
+  const NEVER_UPDATE_FIELDS = new Set(["id", "status", "created_at"]);
   const stripEmptyUpdateValues = (row: Record<string, any>) => {
     return Object.fromEntries(
-      Object.entries(row).filter(([, value]) => value !== null && value !== undefined && value !== ""),
+      Object.entries(row).filter(
+        ([key, value]) =>
+          // Status/acesso são geridos manualmente: a importação nunca altera em registros existentes
+          !NEVER_UPDATE_FIELDS.has(key) &&
+          value !== null &&
+          value !== undefined &&
+          !(typeof value === "string" && value.trim() === ""),
+      ),
     );
   };
 
@@ -388,7 +396,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
         const changed = Object.keys(c).some((key) => {
           const next = (c as any)[key];
-          if (next === null || next === undefined || next === "") return false;
+          if (NEVER_UPDATE_FIELDS.has(key)) return false;
+          if (next === null || next === undefined || (typeof next === "string" && next.trim() === "")) return false;
           return String(next) !== String(existing[key] ?? "");
         });
 
@@ -430,7 +439,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       const allNomes = new Set<string>();
       (existentes ?? []).forEach((r: any) => {
         if (r.nome_normalizado) allNomes.add(String(r.nome_normalizado));
-        if (r.referral_id) byReferral.set(String(r.referral_id), r.id);
+        if (r.referral_id) byReferral.set(String(r.referral_id).trim(), r.id);
         if (r.nome_normalizado && String(r.status || "").toLowerCase() !== "duplicado")
           byNome.set(String(r.nome_normalizado), { id: r.id, referral_id: r.referral_id ?? null });
       });
@@ -484,7 +493,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           console.warn(`[Importação] Linha sem Referral ID ignorada: "${c.nome}"`);
           return;
         }
-        const existingId = byReferral.get(String(c.referral_id));
+        const existingId = byReferral.get(String(c.referral_id).trim());
         if (existingId) {
           toUpdate.push({ id: existingId, row: stripEmptyUpdateValues(c) });
         } else {
@@ -497,7 +506,11 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       for (let i = 0; i < toInsert.length; i += chunkSize) {
         const { error } = await supabase
           .from("candidatos")
-          .upsert(toInsert.slice(i, i + chunkSize) as any, { onConflict: "referral_id" });
+          .upsert(toInsert.slice(i, i + chunkSize) as any, {
+            onConflict: "referral_id",
+            // Nunca sobrescrever um candidato existente pelo caminho de inserção
+            ignoreDuplicates: true,
+          });
         if (error) throw error;
       }
 
