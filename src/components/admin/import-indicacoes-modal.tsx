@@ -28,6 +28,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Upload, AlertCircle, CheckCircle2, UserPlus, EyeOff } from "lucide-react";
 import { normalizeNameAggressive, getSimilarCandidates } from "@/lib/string-utils";
+import {
+  daysBetween,
+  detectColumnFormat,
+  formatDateBR,
+  isEntrevistaGerada,
+  normalizeText,
+  resolveSheetDate,
+} from "@/lib/date-utils";
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -50,6 +58,10 @@ interface MappedIndication {
   vinculado: boolean;
   manual_ignore?: boolean;
   importStatus?: "new" | "existing";
+  date_corrected?: boolean;
+  date_invalid?: boolean;
+  /** Existing DB row whose resultado should be upgraded to 'Entrevista gerada'. */
+  upgrade_existing_id?: string | null;
   suggestions?: { id: string; nome: string }[];
 }
 
@@ -59,41 +71,64 @@ function getActionDateForStorage(date: string | null | undefined) {
   return date || DEFAULT_ACTION_DATE;
 }
 
-function getActionDateForDisplay(date: string | null | undefined) {
-  return !date || date === DEFAULT_ACTION_DATE ? "-" : date;
+interface ExistingRow {
+  id: string | null;
+  data_acao: string;
+  resultado: string | null;
 }
 
-function buildDedupKey(
-  candidatoId: string | null | undefined,
-  vaga: string | null | undefined,
-  empresa: string | null | undefined,
-  dataAcao: string | null | undefined,
-) {
-  return [
-    candidatoId || "",
-    String(vaga || "").trim(),
-    String(empresa || "").trim(),
-    getActionDateForStorage(dataAcao),
-  ].join("||");
+function groupKey(candidatoId: string | null | undefined, vaga: string | null | undefined, empresa: string | null | undefined) {
+  return [candidatoId || "", normalizeText(vaga), normalizeText(empresa)].join("||");
 }
 
-function recomputeImportStatus(data: MappedIndication[], existingKeys: Set<string>) {
-  const seenKeys = new Set<string>();
+/** Same candidate + normalized vaga/empresa + data_acao within 3 days = already existing. */
+function findNearby(list: ExistingRow[] | undefined, dataAcao: string) {
+  if (!list) return undefined;
+  return list.find((e) =>
+    e.data_acao === dataAcao ||
+    (e.data_acao !== DEFAULT_ACTION_DATE && dataAcao !== DEFAULT_ACTION_DATE && daysBetween(e.data_acao, dataAcao) <= 3),
+  );
+}
 
-  return data.map((item): MappedIndication => {
+function recomputeImportStatus(data: MappedIndication[], existing: Map<string, ExistingRow[]>) {
+  const seen = new Map<string, (ExistingRow & { outIndex: number })[]>();
+  const out: MappedIndication[] = [];
+
+  for (const item of data) {
     if (!item.vinculado || !item.candidato_id || item.manual_ignore) {
       const itemWithoutStatus = { ...item };
       delete itemWithoutStatus.importStatus;
-      return itemWithoutStatus;
+      delete itemWithoutStatus.upgrade_existing_id;
+      out.push(itemWithoutStatus);
+      continue;
     }
 
     const dataAcao = getActionDateForStorage(item.data_acao);
-    const key = buildDedupKey(item.candidato_id, item.vaga, item.empresa, dataAcao);
-    const importStatus = existingKeys.has(key) || seenKeys.has(key) ? "existing" : "new";
-    seenKeys.add(key);
+    const key = groupKey(item.candidato_id, item.vaga, item.empresa);
+    const dbMatch = findNearby(existing.get(key), dataAcao);
+    if (dbMatch) {
+      const upgrade = isEntrevistaGerada(item.resultado) && !isEntrevistaGerada(dbMatch.resultado) ? dbMatch.id : null;
+      out.push({ ...item, data_acao: dataAcao, importStatus: "existing", upgrade_existing_id: upgrade });
+      continue;
+    }
 
-    return { ...item, data_acao: dataAcao, importStatus };
-  });
+    const fileMatch = findNearby(seen.get(key), dataAcao) as (ExistingRow & { outIndex: number }) | undefined;
+    if (fileMatch) {
+      // Duplicate inside the file: keep the first row, but carry over 'Entrevista gerada'
+      const first = out[fileMatch.outIndex];
+      if (first && isEntrevistaGerada(item.resultado) && !isEntrevistaGerada(first.resultado)) {
+        out[fileMatch.outIndex] = { ...first, resultado: item.resultado };
+      }
+      out.push({ ...item, data_acao: dataAcao, importStatus: "existing", upgrade_existing_id: null });
+      continue;
+    }
+
+    const list = seen.get(key) ?? [];
+    list.push({ id: null, data_acao: dataAcao, resultado: item.resultado, outIndex: out.length });
+    seen.set(key, list);
+    out.push({ ...item, data_acao: dataAcao, importStatus: "new", upgrade_existing_id: null });
+  }
+  return out;
 }
 
 export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModalProps) {
@@ -105,10 +140,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     vinculados: 0, 
     naoVinculados: 0,
     novos: 0,
-    existentes: 0
+    existentes: 0,
+    corrigidas: 0,
+    invalidas: 0,
+    upgrades: 0,
   });
   const [showOnlyUnlinked, setShowOnlyUnlinked] = useState(false);
-  const [existingDedupKeys, setExistingDedupKeys] = useState<Set<string>>(new Set());
+  const [existingRows, setExistingRows] = useState<Map<string, ExistingRow[]>>(new Map());
 
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -116,42 +154,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
   const [uploadProgress, setUploadProgress] = useState(0);
 
 
-  const parseExcelDate = (val: any) => {
-    if (!val) return null;
-    
-    if (typeof val === 'number') {
-      const date = XLSX.SSF.parse_date_code(val);
-      if (date.m < 1 || date.m > 12 || date.d < 1 || date.d > 31) return null;
-      return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
-    }
-    
-    const str = String(val).trim();
-    const parts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
-    if (parts && parts[1] && parts[2] && parts[3]) {
-      let day = parseInt(parts[1], 10);
-      let month = parseInt(parts[2], 10);
-
-      // Se o segundo número > 12, é formato MM/DD/YYYY (americano)
-      if (month > 12 && day <= 12) {
-        [day, month] = [month, day];
-      }
-
-      // Validate: if still invalid after swap, return null (typo in spreadsheet)
-      if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-
-      return `${parts[3]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    }
-
-    const d = new Date(str);
-    if (!isNaN(d.getTime())) {
-      const iso = d.toISOString().split('T')[0];
-      if (!iso) return null;
-      const [, m, dd] = iso.split('-').map(Number);
-      if (m === undefined || dd === undefined || m < 1 || m > 12 || dd < 1 || dd > 31) return null;
-      return iso;
-    }
-
-    return null;
+  const serialToParts = (n: number) => {
+    const date = XLSX.SSF.parse_date_code(n);
+    return date ? { y: date.y, m: date.m, d: date.d } : null;
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -163,7 +168,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
 
     try {
       const data = await selectedFile.arrayBuffer();
-      const workbook = XLSX.read(data);
+      const workbook = XLSX.read(data, { cellDates: false });
       
       const processedSheets: string[] = [];
       const ignoredSheets: { name: string; reason: string }[] = [];
@@ -188,25 +193,28 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         candidatesList.filter(c => c.referral_id).map(c => [String(c.referral_id).trim(), c.id])
       );
 
-      const loadedExistingKeys = new Set<string>();
+      const loadedExisting = new Map<string, ExistingRow[]>();
       const pageSize = 1000;
       for (let from = 0; ; from += pageSize) {
         const { data: existingRows, error: existingError } = await (supabase
           .from("indicacoes")
-          .select("candidato_id,vaga,empresa,data_acao")
+          .select("id,candidato_id,vaga,empresa,data_acao,resultado")
           .range(from, from + pageSize - 1) as any);
 
         if (existingError) throw existingError;
 
         const rows = existingRows || [];
         rows.forEach((row: any) => {
-          loadedExistingKeys.add(buildDedupKey(row.candidato_id, row.vaga, row.empresa, row.data_acao));
+          const key = groupKey(row.candidato_id, row.vaga, row.empresa);
+          const list = loadedExisting.get(key) ?? [];
+          list.push({ id: row.id, data_acao: getActionDateForStorage(row.data_acao), resultado: row.resultado });
+          loadedExisting.set(key, list);
         });
 
         if (rows.length < pageSize) break;
       }
 
-      setExistingDedupKeys(loadedExistingKeys);
+      setExistingRows(loadedExisting);
 
       for (const sheetName of workbook.SheetNames) {
         const worksheet = workbook.Sheets[sheetName];
@@ -268,6 +276,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxObs = getCol(["obs", "observações", "observacoes"]);
 
         const dataRows = jsonData.slice(headerRowIndex + 1);
+        // Date format is detected per column and per sheet before converting
+        const acaoFormat = idxDataAcao !== -1 ? detectColumnFormat(dataRows.map((r) => r[idxDataAcao])) : "NONE";
+        const retornoFormat = idxDataRetorno !== -1 ? detectColumnFormat(dataRows.map((r) => r[idxDataRetorno])) : "NONE";
         
         const filterPlaceholder = (val: any) => {
           if (val === null || val === undefined) return null;
@@ -319,6 +330,13 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             }
           }
 
+          const acaoDate = idxDataAcao !== -1
+            ? resolveSheetDate(row[idxDataAcao], acaoFormat, "action", serialToParts)
+            : { iso: null, corrected: false, invalid: false };
+          const retornoDate = idxDataRetorno !== -1
+            ? resolveSheetDate(row[idxDataRetorno], retornoFormat, "retorno", serialToParts)
+            : { iso: null, corrected: false, invalid: false };
+
           const suggestions = !vinculado && normNomePlanilha 
             ? getSimilarCandidates(normNomePlanilha, candidatesList)
             : [];
@@ -332,7 +350,9 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             indicacao_contato: idxContato !== -1 ? filterPlaceholder(row[idxContato]) : null,
             vaga_link: idxLink !== -1 ? filterPlaceholder(row[idxLink]) : null,
             formato: null, 
-            data_acao: idxDataAcao !== -1 ? getActionDateForStorage(parseExcelDate(row[idxDataAcao]) as string | null) : DEFAULT_ACTION_DATE,
+            data_acao: getActionDateForStorage(acaoDate.iso),
+            date_corrected: acaoDate.corrected || retornoDate.corrected,
+            date_invalid: acaoDate.invalid,
             resultado: idxStatus !== -1 ? filterPlaceholder(row[idxStatus]) : null,
             // TALENT is the connector; when it is empty the field stays NULL (never the sheet name)
             jobhunter: idxTalent !== -1 ? rawTalent : rawConnector,
@@ -340,7 +360,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             suggestions: suggestions.map(s => ({ id: s.id, nome: s.nome })),
             origem: idxOrigem !== -1 ? filterPlaceholder(row[idxOrigem]) : null,
             linkedin_candidato: idxLinkedin !== -1 ? filterPlaceholder(row[idxLinkedin]) : null,
-            data_retorno: idxDataRetorno !== -1 ? parseExcelDate(row[idxDataRetorno]) : null,
+            data_retorno: retornoDate.iso,
             follow_up: idxFollowUp !== -1 ? filterPlaceholder(row[idxFollowUp]) : null,
             funil: idxFunil !== -1 ? filterPlaceholder(row[idxFunil]) : null,
             observacoes: idxObs !== -1 ? filterPlaceholder(row[idxObs]) : null,
@@ -349,7 +369,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       }
 
       setDebugLog({ processed: processedSheets, ignored: ignoredSheets });
-      const dataWithStatus = recomputeImportStatus(allMappedData, loadedExistingKeys);
+      const dataWithStatus = recomputeImportStatus(allMappedData, loadedExisting);
       setPreviewData(dataWithStatus);
       updateStats(dataWithStatus);
     } catch (error) {
@@ -368,7 +388,10 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
       vinculados: vinculadosCount,
       naoVinculados: data.filter(d => !d.vinculado && !d.manual_ignore).length,
       novos: data.filter(d => d.vinculado && !d.manual_ignore && d.importStatus !== "existing").length,
-      existentes: existentesCount
+      existentes: existentesCount,
+      corrigidas: data.filter(d => d.date_corrected && !d.manual_ignore).length,
+      invalidas: data.filter(d => d.date_invalid && !d.manual_ignore).length,
+      upgrades: new Set(data.filter(d => !d.manual_ignore && d.upgrade_existing_id).map(d => d.upgrade_existing_id)).size,
     });
   };
 
@@ -382,7 +405,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           ? ({ ...item, vinculado: false, manual_ignore: true, candidato_id: null } as MappedIndication)
           : ({ ...item, vinculado: true, manual_ignore: false, candidato_id: candidatoId } as MappedIndication);
       });
-      const dataWithStatus = recomputeImportStatus(newData, existingDedupKeys);
+      const dataWithStatus = recomputeImportStatus(newData, existingRows);
       updateStats(dataWithStatus);
       return dataWithStatus;
     });
@@ -469,7 +492,20 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         setUploadProgress(currentProgress);
       }
 
-      toast.success(`${insertedCount} novas indicações importadas. ${stats.existentes} já existentes ignoradas.`);
+      // Upgrade individual existing rows (by id) to 'Entrevista gerada'
+      const upgrades = new Map<string, string>();
+      previewData.forEach((d) => {
+        if (!d.manual_ignore && d.upgrade_existing_id && d.resultado) upgrades.set(d.upgrade_existing_id, d.resultado);
+      });
+      for (const [id, resultado] of upgrades) {
+        const { error: updError } = await supabase.from("indicacoes").update({ resultado }).eq("id", id);
+        if (updError) throw updError;
+      }
+
+      toast.success(
+        `${insertedCount} novas indicações importadas. ${stats.existentes} já existentes ignoradas.` +
+          (upgrades.size ? ` ${upgrades.size} atualizadas para "Entrevista gerada".` : ""),
+      );
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -556,6 +592,14 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                     <p className="text-xs text-gray-600 font-medium uppercase">Já existentes</p>
                     <p className="text-2xl font-bold text-gray-900">{stats.existentes}</p>
                   </div>
+                  <div>
+                    <p className="text-xs text-blue-600 font-medium uppercase">Datas corrigidas automaticamente (dia/mês trocados)</p>
+                    <p className="text-2xl font-bold text-blue-900">{stats.corrigidas}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-amber-600 font-medium uppercase">Datas inválidas</p>
+                    <p className="text-2xl font-bold text-amber-900">{stats.invalidas}</p>
+                  </div>
                 </div>
                 
                 <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-md border shadow-sm">
@@ -636,7 +680,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                         .filter(row => !showOnlyUnlinked || (!row.vinculado && !row.manual_ignore))
                         .slice(0, 100)
                         .map((row, i) => (
-                        <TableRow key={i} className={!row.vinculado && !row.manual_ignore ? "bg-red-50/30" : row.manual_ignore ? "bg-gray-50 opacity-60" : ""}>
+                        <TableRow key={i} className={row.manual_ignore ? "bg-gray-50 opacity-60" : row.date_invalid ? "bg-yellow-100" : !row.vinculado ? "bg-red-50/30" : ""}>
 
                           <TableCell>
                             {row.vinculado ? (
@@ -665,7 +709,11 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
                           </TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.vaga}</TableCell>
                           <TableCell className="truncate max-w-[150px]">{row.empresa}</TableCell>
-                          <TableCell>{getActionDateForDisplay(row.data_acao)}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDateBR(row.data_acao)}
+                            {row.date_invalid && <span className="ml-1 text-[11px] font-medium text-amber-700">data inválida</span>}
+                            {row.date_corrected && <span className="ml-1 text-[11px] text-blue-600">(corrigida)</span>}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -689,7 +737,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           {file && !isProcessing && !isUploading && (
             <Button 
               onClick={handleConfirmImport} 
-              disabled={isUploading || stats.novos === 0}
+              disabled={isUploading || (stats.novos === 0 && stats.upgrades === 0)}
               className="bg-violet-600 hover:bg-violet-700"
             >
               Confirmar Importação ({stats.novos})

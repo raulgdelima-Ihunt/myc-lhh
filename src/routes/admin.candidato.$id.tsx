@@ -23,16 +23,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, ArrowLeft, CheckCircle, Briefcase, KeyRound, Pencil, Trash2 } from "lucide-react";
-import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
+import { useCandidato, useCandidatoIndicacoes, useCandidatoDistribuicao } from "@/hooks/use-candidato-data";
 import { createCandidateAccess, getCandidateAccessStatus, resetCandidatePassword } from "@/lib/auth.functions";
 import { CANDIDATO_STATUS_OPTIONS, getStatusMeta } from "@/lib/candidato-status";
 import { toast } from "sonner";
+import { DEFAULT_ACTION_DATE as DEFAULT_DATE, formatDateBR, isEntrevistaGerada, latestRealDate } from "@/lib/date-utils";
 
-const DEFAULT_ACTION_DATE = "1900-01-01";
+const DEFAULT_ACTION_DATE = DEFAULT_DATE;
+const formatActionDate = formatDateBR;
 
-function formatActionDate(date: string | null | undefined) {
-  if (!date || date === DEFAULT_ACTION_DATE) return "-";
-  return new Date(date).toLocaleDateString("pt-BR");
+function resultadoBadgeClass(resultado: string | null | undefined) {
+  const r = (resultado || "").toLowerCase();
+  if (isEntrevistaGerada(resultado)) return "bg-[#4CAF50] text-white ring-1 ring-[#4CAF50]";
+  if (r.includes("entrevista")) return "bg-green-100 text-[#4CAF50]";
+  if (r.includes("cv enviado")) return "bg-purple-100 text-primary";
+  return "bg-gray-100 text-[#666666]";
 }
 
 export const Route = createFileRoute("/admin/candidato/$id")({
@@ -90,6 +95,7 @@ function CandidatoDetail() {
 
   const { data: candidato, isLoading: isLoadingCandidato, refetch: refetchCandidato } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes, refetch: refetchIndicacoes } = useCandidatoIndicacoes(id);
+  const { data: distribuidoEm } = useCandidatoDistribuicao(id);
   const indFilters = useColumnFilters(indicacoes ?? [], {
     vaga: (i) => i.vaga,
     empresa: (i) => i.empresa,
@@ -309,6 +315,9 @@ function CandidatoDetail() {
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <h1 className="text-3xl font-bold text-[#333333] tracking-tight">{candidato?.nome}</h1>
+                  {distribuidoEm && (
+                    <p className="text-xs text-[#666666]">Distribuído em {formatDateBR(distribuidoEm)}</p>
+                  )}
 
                   <div className="flex items-center gap-2">
                     {isEditingEmail ? (
@@ -514,7 +523,7 @@ function CandidatoDetail() {
                 <CardContent className="pt-6">
                   <p className="text-xs font-bold text-[#666666] uppercase tracking-wider mb-1">Última Indicação</p>
                   <p className="text-xl font-bold text-[#333333]">
-                    {formatActionDate(indicacoes?.[0]?.data_acao)}
+                    {formatActionDate(latestRealDate((indicacoes ?? []).map((i) => i.data_acao)))}
                   </p>
                 </CardContent>
               </Card>
@@ -568,11 +577,7 @@ function CandidatoDetail() {
                           <td className="px-6 py-4 text-sm text-[#666666]">{i.empresa}</td>
                           <td className="px-6 py-4 text-sm text-[#666666] text-center font-medium">{formatActionDate(i.data_acao)}</td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${
-                              i.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-[#4CAF50]' :
-                              i.resultado?.toLowerCase().includes('cv enviado') ? 'bg-purple-100 text-primary' :
-                              'bg-gray-100 text-[#666666]'
-                            }`}>
+                            <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-tighter ${resultadoBadgeClass(i.resultado)}`}>
                               {i.resultado || 'Sem retorno'}
                             </span>
                           </td>

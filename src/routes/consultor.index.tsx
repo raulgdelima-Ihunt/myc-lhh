@@ -1,3 +1,4 @@
+import { formatDateBR } from "@/lib/date-utils";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/hooks/use-auth";
@@ -159,9 +160,7 @@ function ConsultorPage() {
                         </TableCell>
                         <TableCell className="text-[#666666]">{c.totalIndicacoes}</TableCell>
                         <TableCell className="text-[#666666]">
-                          {c.ultimaIndicacao
-                            ? new Date(c.ultimaIndicacao).toLocaleDateString("pt-BR")
-                            : "-"}
+                          {formatDateBR(c.ultimaIndicacao)}
                         </TableCell>
                       </TableRow>
                     );

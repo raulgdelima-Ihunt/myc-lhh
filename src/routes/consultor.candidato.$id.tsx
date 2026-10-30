@@ -1,16 +1,20 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/auth-guard";
-import { useCandidato, useCandidatoIndicacoes } from "@/hooks/use-candidato-data";
+import { useCandidato, useCandidatoIndicacoes, useCandidatoDistribuicao } from "@/hooks/use-candidato-data";
 import { getStatusMeta } from "@/lib/candidato-status";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Briefcase, Loader2 } from "lucide-react";
+import { formatDateBR, isEntrevistaGerada } from "@/lib/date-utils";
 
-const DEFAULT_ACTION_DATE = "1900-01-01";
+const formatActionDate = formatDateBR;
 
-function formatActionDate(date: string | null | undefined) {
-  if (!date || date === DEFAULT_ACTION_DATE) return "-";
-  return new Date(date).toLocaleDateString("pt-BR");
+function resultadoBadgeClass(resultado: string | null | undefined) {
+  const r = (resultado || "").toLowerCase();
+  if (isEntrevistaGerada(resultado)) return "bg-[#4CAF50] text-white ring-1 ring-[#4CAF50]";
+  if (r.includes("entrevista")) return "bg-green-100 text-[#4CAF50]";
+  if (r.includes("cv enviado")) return "bg-purple-100 text-primary";
+  return "bg-gray-100 text-[#666666]";
 }
 
 export const Route = createFileRoute("/consultor/candidato/$id")({
@@ -42,6 +46,7 @@ function ConsultorCandidatoDetail() {
   const navigate = useNavigate();
   const { data: candidato, isLoading } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes } = useCandidatoIndicacoes(id);
+  const { data: distribuidoEm } = useCandidatoDistribuicao(id);
 
   if (isLoading) {
     return (
@@ -71,6 +76,9 @@ function ConsultorCandidatoDetail() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold tracking-tight text-[#333333]">{candidato?.nome}</h1>
+                {distribuidoEm && (
+                  <p className="text-xs text-[#666666]">Distribuído em {formatDateBR(distribuidoEm)}</p>
+                )}
                 <p className="font-medium text-[#666666]">{candidato?.email || "E-mail não informado"}</p>
               </div>
               <span
@@ -138,7 +146,11 @@ function ConsultorCandidatoDetail() {
                         </td>
                         <td className="px-6 py-4 text-sm text-[#666666]">{i.empresa}</td>
                         <td className="px-6 py-4 text-center text-sm text-[#666666]">{formatActionDate(i.data_acao)}</td>
-                        <td className="px-6 py-4 text-sm text-[#666666]">{i.resultado || "Sem retorno"}</td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-tighter ${resultadoBadgeClass(i.resultado)}`}>
+                            {i.resultado || "Sem retorno"}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

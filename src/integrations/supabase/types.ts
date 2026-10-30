@@ -276,6 +276,66 @@ export type Database = {
           },
         ]
       }
+      indicacoes_backup_20261030: {
+        Row: {
+          acao_tipo: string | null
+          candidato_id: string | null
+          created_at: string | null
+          data_acao: string | null
+          data_retorno: string | null
+          empresa: string | null
+          follow_up: string | null
+          formato: string | null
+          id: string | null
+          indicacao_contato: string | null
+          jobhunter: string | null
+          linkedin_candidato: string | null
+          observacoes: string | null
+          origem: string | null
+          resultado: string | null
+          vaga: string | null
+          vaga_link: string | null
+        }
+        Insert: {
+          acao_tipo?: string | null
+          candidato_id?: string | null
+          created_at?: string | null
+          data_acao?: string | null
+          data_retorno?: string | null
+          empresa?: string | null
+          follow_up?: string | null
+          formato?: string | null
+          id?: string | null
+          indicacao_contato?: string | null
+          jobhunter?: string | null
+          linkedin_candidato?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          resultado?: string | null
+          vaga?: string | null
+          vaga_link?: string | null
+        }
+        Update: {
+          acao_tipo?: string | null
+          candidato_id?: string | null
+          created_at?: string | null
+          data_acao?: string | null
+          data_retorno?: string | null
+          empresa?: string | null
+          follow_up?: string | null
+          formato?: string | null
+          id?: string | null
+          indicacao_contato?: string | null
+          jobhunter?: string | null
+          linkedin_candidato?: string | null
+          observacoes?: string | null
+          origem?: string | null
+          resultado?: string | null
+          vaga?: string | null
+          vaga_link?: string | null
+        }
+        Relationships: []
+      }
       solicitacoes_reforco: {
         Row: {
           candidato_id: string
