@@ -567,7 +567,7 @@ function CandidatoDetail() {
                               {i.resultado || 'Sem retorno'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-sm text-[#666666] italic font-medium">{i.jobhunter || "-"}</td>
+                          <td className="px-6 py-4 text-sm text-[#666666] italic font-medium">{i.jobhunter || "—"}</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-end gap-1">
                               <Button
