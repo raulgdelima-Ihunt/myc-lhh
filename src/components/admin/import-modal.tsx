@@ -105,18 +105,74 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
   };
 
   const NEVER_UPDATE_FIELDS = new Set(["id", "status", "created_at"]);
-  const stripEmptyUpdateValues = (row: Record<string, any>) => {
+
+  // ---- Proteção contra sobrescrever dados existentes com LIXO ----
+  // Placeholder óbvio: "referral inválido", "não informado", "N/A", "invalido"...
+  const PLACEHOLDER_PATTERN = /^(referral |não |nao |n\/a$|invalido|inválido)/i;
+  const AREA_PLACEHOLDER_TERMS = ["inválido", "invalido", "não informado", "nao informado", "n/a"];
+
+  const isValidEmailValue = (value: unknown) => {
+    const text = String(value ?? "").trim();
+    return text.includes("@") && text.includes(".");
+  };
+
+  const isPlaceholderValue = (value: unknown) => {
+    const text = String(value ?? "").trim();
+    if (!text) return true;
+    return PLACEHOLDER_PATTERN.test(text);
+  };
+
+  const hasGarbageTerm = (value: unknown) => {
+    const text = String(value ?? "").toLowerCase();
+    return AREA_PLACEHOLDER_TERMS.some((term) => text.includes(term));
+  };
+
+  // Só deixa um campo entrar no update se ele acrescentar informação real
+  const validateFieldForUpdate = (
+    key: string,
+    newValue: any,
+    existingValue: any,
+  ): boolean => {
+    // vazio/null nunca sobrescreve o que já existe no banco
+    if (newValue === null || newValue === undefined) return false;
+    if (typeof newValue === "string" && newValue.trim() === "") return false;
+
+    // e-mail: só aceita valor que realmente pareça um e-mail
+    if (key === "email" && !isValidEmailValue(newValue)) return false;
+
+    // texto: rejeita placeholder óbvio
+    if (typeof newValue === "string") {
+      if (isPlaceholderValue(newValue)) return false;
+      // área: também rejeita lixo que apareça no meio do texto
+      if (key === "area" && hasGarbageTerm(newValue)) return false;
+    }
+
+    // sem alteração real não entra no update
+    if (
+      existingValue !== null &&
+      existingValue !== undefined &&
+      String(newValue).trim() === String(existingValue).trim()
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const stripEmptyUpdateValues = (
+    row: Record<string, any>,
+    existing?: Record<string, any> | null,
+  ) => {
     return Object.fromEntries(
       Object.entries(row).filter(
         ([key, value]) =>
           // Status/acesso são geridos manualmente: a importação nunca altera em registros existentes
           !NEVER_UPDATE_FIELDS.has(key) &&
-          value !== null &&
-          value !== undefined &&
-          !(typeof value === "string" && value.trim() === ""),
+          validateFieldForUpdate(key, value, existing?.[key]),
       ),
     );
   };
+
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -397,11 +453,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         }
 
         const changed = Object.keys(c).some((key) => {
-          const next = (c as any)[key];
           if (NEVER_UPDATE_FIELDS.has(key)) return false;
-          if (next === null || next === undefined || (typeof next === "string" && next.trim() === "")) return false;
-          return String(next) !== String(existing[key] ?? "");
+          return validateFieldForUpdate(key, (c as any)[key], existing[key]);
         });
+
 
         if (changed) atualizados += 1;
         else semAlteracao += 1;
@@ -433,18 +488,19 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       // Never delete: keep existing candidates and their current status
       const { data: existentes, error: fetchError } = await supabase
         .from("candidatos")
-        .select("id, referral_id, nome_normalizado, status");
+        .select("*");
       if (fetchError) throw fetchError;
 
-      const byReferral = new Map<string, string>();
+      const byReferral = new Map<string, Record<string, any>>();
       const byNome = new Map<string, { id: string; referral_id: string | null }>();
       const allNomes = new Set<string>();
       (existentes ?? []).forEach((r: any) => {
         if (r.nome_normalizado) allNomes.add(String(r.nome_normalizado));
-        if (r.referral_id) byReferral.set(String(r.referral_id).trim(), r.id);
+        if (r.referral_id) byReferral.set(String(r.referral_id).trim(), r);
         if (r.nome_normalizado && String(r.status || "").toLowerCase() !== "duplicado")
           byNome.set(String(r.nome_normalizado), { id: r.id, referral_id: r.referral_id ?? null });
       });
+
 
       // Deduplicate rows inside the spreadsheet itself (last one wins)
       const uniqueRows = new Map<string, any>();
@@ -495,12 +551,20 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           console.warn(`[Importação] Linha sem Referral ID ignorada: "${c.nome}"`);
           return;
         }
-        const existingId = byReferral.get(String(c.referral_id).trim());
-        if (existingId) {
-          toUpdate.push({ id: existingId, row: stripEmptyUpdateValues(c) });
+        const existing = byReferral.get(String(c.referral_id).trim());
+        if (existing) {
+          const updates = stripEmptyUpdateValues(c, existing);
+          if (Object.keys(updates).length > 0) {
+            toUpdate.push({ id: existing["id"], row: updates });
+          } else {
+            console.warn(
+              `[Importação] Nenhum campo novo para atualizar em "${c.nome}" (referral ${c.referral_id}).`,
+            );
+          }
         } else {
           toInsert.push(c);
         }
+
       });
 
       // Insert new candidates in chunks
