@@ -45,7 +45,8 @@ interface MappedIndication {
   formato: string | null;
   data_acao: string | null;
   resultado: string | null;
-  jobhunter: string;
+  jobhunter: string | null;
+  acao_tipo: string | null;
   vinculado: boolean;
   manual_ignore?: boolean;
   importStatus?: "new" | "existing";
@@ -206,13 +207,28 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const getCol = (patterns: string[]) => headerRow.findIndex(h => patterns.some(p => h.includes(p.toLowerCase())));
         
         const idxAcao = getCol(["ação", "indicação", "acao", "indicacao"]);
-        const idxVaga = getCol(["vaga", "posição", "posicao", "vagas"]);
         const idxEmpresa = getCol(["empresa", "consultoria", "empresa/consultoria"]);
+
+        // "LINK VAGA" is only a link — it must never be read as the vacancy title
+        const idxLink = (() => {
+          const exact = headerRow.findIndex(h => h.includes("link vaga") || h.includes("link da vaga"));
+          if (exact !== -1) return exact;
+          return headerRow.findIndex(h => h.includes("link") && !h.includes("linkedin"));
+        })();
+
+        // "JOB TITLE" is the vacancy title; older sheets use VAGA/POSIÇÃO (never the link column)
+        const idxJobTitle = headerRow.findIndex(h =>
+          h.includes("job title") || h.includes("jobtitle") || h.includes("job_title")
+        );
+        const idxVagaLegacy = getCol(["vaga", "posição", "posicao", "vagas"]);
+        const idxVaga = idxJobTitle !== -1
+          ? idxJobTitle
+          : (idxVagaLegacy !== -1 && idxVagaLegacy !== idxLink ? idxVagaLegacy : -1);
         
         if (idxAcao === -1 || idxVaga === -1 || idxEmpresa === -1) {
           const missing = [];
           if (idxAcao === -1) missing.push("Ação/Indicação");
-          if (idxVaga === -1) missing.push("Vaga/Posição");
+          if (idxVaga === -1) missing.push("JOB TITLE (ou Vaga/Posição)");
           if (idxEmpresa === -1) missing.push("Empresa");
           ignoredSheets.push({ name: sheetName, reason: `Colunas ausentes: ${missing.join(", ")}` });
           continue;
@@ -224,12 +240,8 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         const idxConnector = getCol(["conector", "connector", "jobhunter", "responsável", "responsavel"]);
         const idxNome = getCol(["nome", "cliente", "assessorado"]);
         const idxOrigem = getCol(["origem"]);
-        // "LINK VAGA" — never confuse it with a "Linkedin" column
-        const idxLink = (() => {
-          const exact = headerRow.findIndex(h => h.includes("link vaga") || h.includes("link da vaga"));
-          if (exact !== -1) return exact;
-          return headerRow.findIndex(h => h.includes("link") && !h.includes("linkedin"));
-        })();
+        // A dedicated contact column, when the sheet has one (never TALENT, never the link)
+        const idxContato = headerRow.findIndex(h => h.includes("contato") && !h.includes("linkedin"));
         const idxLinkedin = getCol(["linkedin_candidato", "linkedin"]);
         const idxDataAcao = getCol(["data ação", "data acao", "data"]);
         const idxDataRetorno = getCol(["data retorno"]);
@@ -254,6 +266,8 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
           const rawConnector = idxConnector !== -1 ? filterPlaceholder(row[idxConnector]) : null;
           const rawNome = idxNome !== -1 ? filterPlaceholder(row[idxNome]) : null;
           const rawVaga = idxVaga !== -1 ? filterPlaceholder(row[idxVaga]) : null;
+          const rawAcao = idxAcao !== -1 ? filterPlaceholder(row[idxAcao]) : null;
+          const rawTalent = idxTalent !== -1 ? filterPlaceholder(row[idxTalent]) : null;
           const rawEmpresa = idxEmpresa !== -1 ? filterPlaceholder(row[idxEmpresa]) : null;
           
           if (!rawVaga && !rawNome && !rawReferral) continue;
@@ -298,12 +312,14 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             candidato_nome_original: rawNome || `Ref: ${rawReferral}`,
             vaga: rawVaga || "Vaga não informada",
             empresa: rawEmpresa || "-",
-            indicacao_contato: idxTalent !== -1 ? filterPlaceholder(row[idxTalent]) : null,
+            acao_tipo: rawAcao,
+            indicacao_contato: idxContato !== -1 ? filterPlaceholder(row[idxContato]) : null,
             vaga_link: idxLink !== -1 ? filterPlaceholder(row[idxLink]) : null,
             formato: null, 
             data_acao: idxDataAcao !== -1 ? getActionDateForStorage(parseExcelDate(row[idxDataAcao]) as string | null) : DEFAULT_ACTION_DATE,
             resultado: idxStatus !== -1 ? filterPlaceholder(row[idxStatus]) : null,
-            jobhunter: rawConnector || sheetName,
+            // TALENT is the connector; when it is empty the field stays NULL (never the sheet name)
+            jobhunter: idxTalent !== -1 ? rawTalent : rawConnector,
             vinculado,
             suggestions: suggestions.map(s => ({ id: s.id, nome: s.nome })),
             origem: idxOrigem !== -1 ? filterPlaceholder(row[idxOrigem]) : null,
@@ -403,6 +419,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
             candidato_id: item.candidato_id,
             vaga: item.vaga,
             empresa: item.empresa,
+            acao_tipo: item.acao_tipo,
             indicacao_contato: item.indicacao_contato,
             vaga_link: item.vaga_link,
             formato: item.formato,
