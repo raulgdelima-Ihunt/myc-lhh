@@ -23,8 +23,24 @@ const DEFAULT_ACTION_DATE = "1900-01-01";
 
 function formatActionDate(date: string | null | undefined) {
   if (!date || date === DEFAULT_ACTION_DATE) return "-";
-  return new Date(date).toLocaleDateString("pt-BR");
+  const [y, m, d] = date.split("-");
+  return `${d}/${m}/${y}`;
 }
+
+function formatActionWeek(date: string | null | undefined) {
+  if (!date || date === DEFAULT_ACTION_DATE) return "-";
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(y, m - 1, d); // local date constructor — no timezone shift
+  const dayOfWeek = dt.getDay(); // 0=Sun, 1=Mon, ...
+  const monday = new Date(dt);
+  monday.setDate(dt.getDate() - ((dayOfWeek + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = (x: Date) =>
+    `${String(x.getDate()).padStart(2, "0")}/${String(x.getMonth() + 1).padStart(2, "0")}`;
+  return `${fmt(monday)} - ${fmt(sunday)}`;
+}
+
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -333,7 +349,7 @@ function DashboardPage() {
                         <tr>
                           <th className="px-6 py-4 font-semibold">VAGA</th>
                           <th className="px-6 py-4 font-semibold">EMPRESA</th>
-                          <th className="px-6 py-4 font-semibold">DATA</th>
+                          <th className="px-6 py-4 font-semibold">SEMANA</th>
                           <th className="px-6 py-4 font-semibold text-right">RESULTADO</th>
                         </tr>
                       </thead>
@@ -361,19 +377,22 @@ function DashboardPage() {
 
                             <td className="px-6 py-4 text-[#666666]">{ind.empresa}</td>
                             <td className="px-6 py-4 text-[#666666] text-sm">
-                              {formatActionDate(ind.data_acao)}
+                              {formatActionWeek(ind.data_acao)}
                             </td>
+
                             <td className="px-6 py-4 text-right">
-                              <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                                ind.resultado?.toLowerCase().includes('entrevista') ? 'bg-green-100 text-[#4CAF50]' :
-                                ind.resultado?.toLowerCase().includes('cv enviado') ? 'bg-purple-100 text-primary' :
-                                (ind.resultado?.toLowerCase().includes('não indicado') || ind.resultado?.toLowerCase().includes('perfil não aderente')) ? 'bg-gray-100 text-[#666666]' :
-                                (!ind.resultado || ind.resultado.toLowerCase().includes('sem retorno')) ? 'bg-gray-50 text-gray-400' :
-                                'bg-gray-100 text-[#333333]'
-                              }`}>
-                                {ind.resultado || 'Sem retorno'}
-                              </span>
+                              {ind.resultado && !ind.resultado.toLowerCase().includes("sem retorno") ? (
+                                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                                  ind.resultado.toLowerCase().includes("entrevista") ? "bg-green-100 text-[#4CAF50]" :
+                                  ind.resultado.toLowerCase().includes("cv enviado") ? "bg-purple-100 text-primary" :
+                                  (ind.resultado.toLowerCase().includes("não indicado") || ind.resultado.toLowerCase().includes("perfil não aderente")) ? "bg-gray-100 text-[#666666]" :
+                                  "bg-gray-100 text-[#333333]"
+                                }`}>
+                                  {ind.resultado}
+                                </span>
+                              ) : null}
                             </td>
+
                           </tr>
                         ))}
                       </tbody>
@@ -459,7 +478,19 @@ function DashboardPage() {
                   <p className="text-sm font-semibold text-[#333333]">
                     Seu Conector: <span className="text-primary">{conector.nome}</span>
                   </p>
+                  {conector.email && (
+                    <p className="text-sm text-[#666666] mt-1">
+                      E-mail:{" "}
+                      <a
+                        href={`mailto:${conector.email}`}
+                        className="text-primary hover:underline"
+                      >
+                        {conector.email}
+                      </a>
+                    </p>
+                  )}
                 </div>
+
               ) : (
                 <div className="rounded-[6px] border border-amber-200 bg-amber-50 p-4">
                   <p className="text-sm text-[#333333]">
