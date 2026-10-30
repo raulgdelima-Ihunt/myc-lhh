@@ -121,6 +121,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     
     if (typeof val === 'number') {
       const date = XLSX.SSF.parse_date_code(val);
+      if (date.m < 1 || date.m > 12 || date.d < 1 || date.d > 31) return null;
       return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
     }
     
@@ -135,12 +136,18 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         [day, month] = [month, day];
       }
 
+      // Validate: if still invalid after swap, return null (typo in spreadsheet)
+      if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
       return `${parts[3]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
 
     const d = new Date(str);
     if (!isNaN(d.getTime())) {
-      return d.toISOString().split('T')[0];
+      const iso = d.toISOString().split('T')[0];
+      const [y, m, dd] = iso.split('-').map(Number);
+      if (m < 1 || m > 12 || dd < 1 || dd > 31) return null;
+      return iso;
     }
 
     return null;
