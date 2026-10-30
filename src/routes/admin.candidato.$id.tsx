@@ -594,7 +594,7 @@ function CandidatoDetail() {
                                 size="icon"
                                 title="Excluir indicação"
                                 disabled={deletingIndicacaoId === i.id}
-                                onClick={() => handleDeleteIndicacao(i.id)}
+                                onClick={() => handleDeleteIndicacao(i.id, `${i.vaga} — ${i.empresa}`)}
                               >
                                 {deletingIndicacaoId === i.id ? (
                                   <Loader2 size={16} className="animate-spin text-[#666666]" />
