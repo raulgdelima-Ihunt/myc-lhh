@@ -17,14 +17,11 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { DEFAULT_ACTION_DATE, formatDateBR, isEntrevistaGerada, isRealPastDate } from "@/lib/date-utils";
 import { getStatusMeta, isStatusEncerrado } from "@/lib/candidato-status";
 
-const DEFAULT_ACTION_DATE = "1900-01-01";
-
-function formatActionDate(date: string | null | undefined) {
-  if (!date || date === DEFAULT_ACTION_DATE) return "-";
-  const [y, m, d] = date.split("-");
-  return `${d}/${m}/${y}`;
+function monthKey(date: string | null | undefined) {
+  return date && date !== DEFAULT_ACTION_DATE ? date.slice(0, 7) : null;
 }
 
 function formatActionWeek(date: string | null | undefined) {
@@ -124,8 +121,7 @@ function DashboardPage() {
       const matchesSearch = ind.vaga.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            ind.empresa.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const date = ind.data_acao && ind.data_acao !== DEFAULT_ACTION_DATE ? new Date(ind.data_acao) : null;
-      const month = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` : null;
+      const month = monthKey(ind.data_acao);
       const matchesMonth = monthFilter === "all" || month === monthFilter;
       
       const matchesCompany = companyFilter === "all" || ind.empresa === companyFilter;
@@ -141,10 +137,9 @@ function DashboardPage() {
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     
     const uniqueCompanies = new Set(data.indicacoes.map(i => i.empresa));
-    const thisMonthIndications = data.indicacoes.filter(i => {
-      const d = i.data_acao && i.data_acao !== DEFAULT_ACTION_DATE ? new Date(i.data_acao) : null;
-      return d && `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === currentMonth;
-    });
+    const thisMonthIndications = data.indicacoes.filter(
+      i => isRealPastDate(i.data_acao) && monthKey(i.data_acao) === currentMonth
+    );
 
     return {
       total: data.indicacoes.length,
@@ -155,10 +150,7 @@ function DashboardPage() {
 
   const uniqueMonths = useMemo(() => {
     if (!data?.indicacoes) return [];
-    const months = new Set(data.indicacoes.map(ind => {
-      const d = ind.data_acao && ind.data_acao !== DEFAULT_ACTION_DATE ? new Date(ind.data_acao) : null;
-      return d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : null;
-    }).filter(Boolean));
+    const months = new Set(data.indicacoes.map(ind => monthKey(ind.data_acao)).filter(Boolean));
     return Array.from(months).sort().reverse();
   }, [data?.indicacoes]);
 
@@ -239,6 +231,9 @@ function DashboardPage() {
 
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-[#333333]">Olá, {data?.candidato.nome}</h2>
+                {data?.distribuidoEm && (
+                  <p className="text-xs text-[#666666]">Distribuído em {formatDateBR(data.distribuidoEm)}</p>
+                )}
                 <p className="text-[#666666]">Aqui você acompanha o progresso de suas indicações em tempo real.</p>
                 <div className="mt-3">
                   <p className="text-sm font-medium text-[#333333]">
@@ -382,6 +377,7 @@ function DashboardPage() {
                             <td className="px-6 py-4 text-right">
                               {ind.resultado && !ind.resultado.toLowerCase().includes("sem retorno") ? (
                                 <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                                  isEntrevistaGerada(ind.resultado) ? "bg-[#4CAF50] text-white font-bold" :
                                   ind.resultado.toLowerCase().includes("entrevista") ? "bg-green-100 text-[#4CAF50]" :
                                   ind.resultado.toLowerCase().includes("cv enviado") ? "bg-purple-100 text-primary" :
                                   (ind.resultado.toLowerCase().includes("não indicado") || ind.resultado.toLowerCase().includes("perfil não aderente")) ? "bg-gray-100 text-[#666666]" :

@@ -1,3 +1,4 @@
+import { formatDateBR } from "@/lib/date-utils";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -247,7 +248,7 @@ export function DuplicatasModal({
                         <TableCell>{r.email}</TableCell>
                         <TableCell>{r.indicacoes}</TableCell>
                         <TableCell>
-                          {r.created_at ? new Date(r.created_at).toLocaleDateString("pt-BR") : "-"}
+                          {formatDateBR(r.created_at)}
                         </TableCell>
                       </TableRow>
                     ))}
