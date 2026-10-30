@@ -43,6 +43,13 @@
       "when": 1790363193173,
       "tag": "0005_relax_nome_normalizado_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793392302006,
+      "tag": "0006_get_consultor_info_function",
+      "breakpoints": true
     }
   ]
 }

@@ -72,16 +72,13 @@ function DashboardPage() {
 
   const { data, isLoading, error } = useCandidateDashboard(user?.email || "");
 
-  const { data: conector } = useQuery({
-    queryKey: ["conector", data?.candidato.conector_id],
-    enabled: !!data?.candidato.conector_id,
+  const { data: consultor } = useQuery({
+    queryKey: ["consultor", data?.candidato.consultor_responsavel],
+    enabled: !!data?.candidato.consultor_responsavel,
     queryFn: async () => {
-      const { data: c } = await supabase
-        .from("conectores")
-        .select("nome, email")
-        .eq("id", data!.candidato.conector_id!)
-        .maybeSingle();
-      return c;
+      const { data: rows } = await supabase
+        .rpc("get_consultor_info", { p_nome: data!.candidato.consultor_responsavel! });
+      return rows && rows.length > 0 ? rows[0] : null;
     },
   });
 
@@ -245,7 +242,7 @@ function DashboardPage() {
                 <p className="text-[#666666]">Aqui você acompanha o progresso de suas indicações em tempo real.</p>
                 <div className="mt-3">
                   <p className="text-sm font-medium text-[#333333]">
-                    Seu Conector: {conector ? conector.nome : "não atribuído"}
+                    Seu Consultor: {consultor ? consultor.nome : "não atribuído"}
                   </p>
                 </div>
               </div>
@@ -294,7 +291,7 @@ function DashboardPage() {
                 <p className="text-sm text-[#333333]">
                   Os links das vagas publicadas podem expirar sem aviso prévio, pois dependem da
                   disponibilidade no site da empresa. Caso um link não funcione, entre em contato
-                  com seu conector.
+                  com seu consultor.
                 </p>
               </div>
 
@@ -475,19 +472,19 @@ function DashboardPage() {
                 com o título da vaga, a empresa, o link (se disponível) e por que você é aderente
                 à posição.
               </p>
-              {conector ? (
+              {consultor ? (
                 <div className="rounded-[6px] border border-primary/30 bg-[#F0EBF5] p-4">
                   <p className="text-sm font-semibold text-[#333333]">
-                    Seu Conector: <span className="text-primary">{conector.nome}</span>
+                    Seu Consultor: <span className="text-primary">{consultor.nome}</span>
                   </p>
-                  {conector.email && (
+                  {consultor.email && (
                     <p className="text-sm text-[#666666] mt-1">
                       E-mail:{" "}
                       <a
-                        href={`mailto:${conector.email}`}
+                        href={`mailto:${consultor.email}`}
                         className="text-primary hover:underline"
                       >
-                        {conector.email}
+                        {consultor.email}
                       </a>
                     </p>
                   )}
@@ -496,7 +493,7 @@ function DashboardPage() {
               ) : (
                 <div className="rounded-[6px] border border-amber-200 bg-amber-50 p-4">
                   <p className="text-sm text-[#333333]">
-                    Entre em contato com a equipe MyCareer para identificar seu conector responsável.
+                    Entre em contato com a equipe MyCareer para identificar seu consultor responsável.
                   </p>
                 </div>
               )}
