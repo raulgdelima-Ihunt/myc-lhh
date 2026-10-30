@@ -544,7 +544,7 @@ function CandidatoDetail() {
                         <th className="px-6 py-4"><ColumnFilter label="Empresa" values={indFilters.valuesFor("empresa")} selected={indFilters.filters["empresa"]} onChange={(v) => indFilters.setFilter("empresa", v)} /></th>
                         <th className="px-6 py-4 text-center"><ColumnFilter label="Data" values={indFilters.valuesFor("data")} selected={indFilters.filters["data"]} onChange={(v) => indFilters.setFilter("data", v)} /></th>
                         <th className="px-6 py-4"><ColumnFilter label="Resultado" values={indFilters.valuesFor("resultado")} selected={indFilters.filters["resultado"]} onChange={(v) => indFilters.setFilter("resultado", v)} /></th>
-                        <th className="px-6 py-4"><ColumnFilter label="Conector" values={indFilters.valuesFor("conector")} selected={indFilters.filters["conector"]} onChange={(v) => indFilters.setFilter("conector", v)} /></th>
+                        <th className="px-6 py-4"><ColumnFilter label="Conector" values={indFilters.valuesFor("conector")} selected={indFilters.filters["conector"]} onChange={(v) => indFilters.setFilter("conector", v)} align="end" /></th>
                         <th className="px-6 py-4 text-right">Ações</th>
                       </tr>
                     </thead>

@@ -372,7 +372,7 @@ function AdminPage() {
                     <TableHead className="font-semibold"><ColumnFilter label="Área" values={colFilters.valuesFor("area")} selected={colFilters.filters["area"]} onChange={(v) => colFilters.setFilter("area", v)} /></TableHead>
                     <TableHead className="font-semibold"><ColumnFilter label="Nível de Cargo" values={colFilters.valuesFor("nivel")} selected={colFilters.filters["nivel"]} onChange={(v) => colFilters.setFilter("nivel", v)} /></TableHead>
                     <TableHead className="font-semibold"><ColumnFilter label="Consultor" values={colFilters.valuesFor("consultor")} selected={colFilters.filters["consultor"]} onChange={(v) => colFilters.setFilter("consultor", v)} /></TableHead>
-                    <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} align="end" /></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
