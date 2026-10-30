@@ -127,7 +127,15 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     const str = String(val).trim();
     const parts = str.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
     if (parts && parts[1] && parts[2] && parts[3]) {
-      return `${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+      let day = parseInt(parts[1], 10);
+      let month = parseInt(parts[2], 10);
+
+      // Se o segundo número > 12, é formato MM/DD/YYYY (americano)
+      if (month > 12 && day <= 12) {
+        [day, month] = [month, day];
+      }
+
+      return `${parts[3]}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
 
     const d = new Date(str);
@@ -243,7 +251,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
         // A dedicated contact column, when the sheet has one (never TALENT, never the link)
         const idxContato = headerRow.findIndex(h => h.includes("contato") && !h.includes("linkedin"));
         const idxLinkedin = getCol(["linkedin_candidato", "linkedin"]);
-        const idxDataAcao = getCol(["data ação", "data acao", "data"]);
+        const idxDataAcao = getCol(["data ação", "data acao", "data", "semana"]);
         const idxDataRetorno = getCol(["data retorno"]);
         const idxFollowUp = getCol(["follow up"]);
         const idxFunil = getCol(["funil"]);
