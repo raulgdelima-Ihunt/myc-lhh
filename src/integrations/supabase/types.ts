@@ -345,6 +345,13 @@ export type Database = {
     Functions: {
       current_consultor_nome: { Args: never; Returns: string }
       current_user_role: { Args: never; Returns: string }
+      get_consultor_info: {
+        Args: { p_nome: string }
+        Returns: {
+          email: string
+          nome: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
