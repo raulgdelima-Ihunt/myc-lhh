@@ -107,6 +107,14 @@ function AdminPage() {
     return { ativo, ativoDte, completo, inativo, duplicado };
   }, [candidatos]);
 
+  const ativosSemEmail = useMemo(() => {
+    const list = candidatos ?? [];
+    return list.filter((c) => {
+      const st = String(c.status || "").trim().toLowerCase();
+      return (st === "ativo" || st === "ativo no dte") && !isEmailValido(c.email);
+    }).length;
+  }, [candidatos]);
+
   const consultores = useMemo(() => {
     const names = new Set(
       (candidatos ?? [])
@@ -243,9 +251,9 @@ function AdminPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-[#666666] uppercase tracking-wider">Sem E-mail</p>
+                  <p className="text-sm font-medium text-[#666666] uppercase tracking-wider">Ativos sem e-mail</p>
                   <p className="text-3xl font-bold text-primary">
-                    {isLoadingStats ? <Loader2 className="h-6 w-6 animate-spin text-gray-300" /> : stats?.withoutEmail || 0}
+                    {isLoadingCandidatos ? <Loader2 className="h-6 w-6 animate-spin text-gray-300" /> : ativosSemEmail}
                   </p>
                 </div>
                 <div className="p-3 bg-amber-50 rounded-lg">
