@@ -30,7 +30,9 @@ function formatActionDate(date: string | null | undefined) {
 function formatActionWeek(date: string | null | undefined) {
   if (!date || date === DEFAULT_ACTION_DATE) return "-";
   const [y, m, d] = date.split("-").map(Number);
+  if (!y || !m || !d) return "-";
   const dt = new Date(y, m - 1, d); // local date constructor — no timezone shift
+
   const dayOfWeek = dt.getDay(); // 0=Sun, 1=Mon, ...
   const monday = new Date(dt);
   monday.setDate(dt.getDate() - ((dayOfWeek + 6) % 7));
