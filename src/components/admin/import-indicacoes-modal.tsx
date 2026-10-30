@@ -146,7 +146,7 @@ export function ImportIndicacoesModal({ isOpen, onClose, onSuccess }: ImportModa
     if (!isNaN(d.getTime())) {
       const iso = d.toISOString().split('T')[0];
       if (!iso) return null;
-      const [m, dd] = iso.split('-').map(Number);
+      const [, m, dd] = iso.split('-').map(Number);
       if (m === undefined || dd === undefined || m < 1 || m > 12 || dd < 1 || dd > 31) return null;
       return iso;
     }
