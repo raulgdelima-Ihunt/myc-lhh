@@ -180,7 +180,7 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
                   <TableRow>
                     <TableHead className="font-semibold"><ColumnFilter label="Nome" values={colFilters.valuesFor("nome")} selected={colFilters.filters["nome"]} onChange={(v) => colFilters.setFilter("nome", v)} /></TableHead>
                     <TableHead className="font-semibold"><ColumnFilter label="E-mail" values={colFilters.valuesFor("email")} selected={colFilters.filters["email"]} onChange={(v) => colFilters.setFilter("email", v)} /></TableHead>
-                    <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} /></TableHead>
+                    <TableHead className="font-semibold"><ColumnFilter label="Status" values={colFilters.valuesFor("status")} selected={colFilters.filters["status"]} onChange={(v) => colFilters.setFilter("status", v)} align="end" /></TableHead>
                     <TableHead className="w-[100px] font-semibold">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
