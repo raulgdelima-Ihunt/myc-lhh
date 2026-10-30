@@ -36,6 +36,11 @@ interface Props {
 
 export function ConectoresModal({ isOpen, onClose }: Props) {
   const [conectores, setConectores] = useState<Conector[]>([]);
+  const colFilters = useColumnFilters(conectores, {
+    nome: (c) => c.nome,
+    email: (c) => c.email,
+    status: (c) => (c.ativo ? "Ativo" : "Inativo"),
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
