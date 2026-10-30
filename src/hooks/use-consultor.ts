@@ -1,3 +1,4 @@
+import { isDistribuicao, latestRealDate } from "@/lib/date-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -30,14 +31,14 @@ export const useConsultorCarteira = (enabled: boolean) => {
       if (error) throw error;
 
       const ids = (candidatos ?? []).map((c) => c.id);
-      let indicacoes: { candidato_id: string | null; data_acao: string }[] = [];
+      let indicacoes: { candidato_id: string | null; data_acao: string; jobhunter: string | null }[] = [];
 
       if (ids.length > 0) {
         const pageSize = 1000;
         for (let from = 0; ; from += pageSize) {
           const { data: indData, error: indError } = await supabase
             .from("indicacoes")
-            .select("candidato_id, data_acao")
+            .select("candidato_id, data_acao, jobhunter")
             .in("candidato_id", ids)
             .range(from, from + pageSize - 1);
           if (indError) throw indError;
@@ -49,16 +50,12 @@ export const useConsultorCarteira = (enabled: boolean) => {
       }
 
       return (candidatos ?? []).map((candidato) => {
-        const own = indicacoes.filter((i) => i.candidato_id === candidato.id);
-        const dates = own
-          .map((i) => i.data_acao)
-          .filter((d) => d && d !== "1900-01-01")
-          .sort()
-          .reverse();
+        const own = indicacoes.filter((i) => i.candidato_id === candidato.id && !isDistribuicao(i));
+        const ultima = latestRealDate(own.map((i) => i.data_acao));
         return {
           ...candidato,
           totalIndicacoes: own.length,
-          ultimaIndicacao: dates[0] ?? null,
+          ultimaIndicacao: ultima,
         };
       });
     },
