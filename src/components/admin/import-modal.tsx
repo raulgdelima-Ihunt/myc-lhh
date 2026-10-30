@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { toOfficialStatus } from "@/lib/candidato-status";
 import * as XLSX from "xlsx";
 import {
   Dialog,
@@ -349,7 +350,8 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           pcd: idxPcd !== -1 ? filterPlaceholder(row[idxPcd]) : null,
           descricao_pcd: idxDescricaoPcd !== -1 ? filterPlaceholder(row[idxDescricaoPcd]) : null,
           parceiro: idxParceiro !== -1 ? String(row[idxParceiro] || "").trim() : "LHH",
-          status: "ativo",
+          // Only used for NEW candidates (status is in NEVER_UPDATE_FIELDS for existing ones)
+          status: toOfficialStatus(idxStatusProg !== -1 ? String(row[idxStatusProg] ?? "") : null) ?? "ativo",
         };
 
         mappedData.push(candidate);
