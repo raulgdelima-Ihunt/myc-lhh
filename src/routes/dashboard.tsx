@@ -464,9 +464,7 @@ function DashboardPage() {
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm leading-relaxed text-[#333333]">
-                Para solicitar reforço de candidatura, envie um e-mail para a área de Conexões
-                com o título da vaga, a empresa, o link (se disponível) e por que você é aderente
-                à posição.
+                Para solicitar reforço de candidatura, envie email para:
               </p>
               {consultor ? (
                 <div className="rounded-[6px] border border-primary/30 bg-[#F0EBF5] p-4">
