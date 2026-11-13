@@ -181,7 +181,25 @@ export function resolveSheetDate(
   const max = kind === "retorno" ? addDaysISO(today, 60) : addDaysISO(today, 1);
   const plausible = (p: Parts) => isCalendarValid(p) && toISO(p) >= min && toISO(p) <= max;
 
-  if (plausible(primary)) return { iso: toISO(primary), corrected: false, invalid: false };
+  if (plausible(primary)) {
+    // For Date objects with ambiguous m/d (both <= 12), check if swapped
+    // is significantly closer to today — indicates a locale-caused m/d swap.
+    if (
+      val instanceof Date &&
+      primary.m !== primary.d && // No point swapping if same
+      primary.m <= 12 &&
+      primary.d <= 12 &&
+      isCalendarValid(swapped) &&
+      plausible(swapped)
+    ) {
+      const distPrimary = daysBetween(toISO(primary), today);
+      const distSwapped = daysBetween(toISO(swapped), today);
+      if (distSwapped < distPrimary && distPrimary - distSwapped >= 14) {
+        return { iso: toISO(swapped), corrected: true, invalid: false };
+      }
+    }
+    return { iso: toISO(primary), corrected: false, invalid: false };
+  }
   if (plausible(swapped)) return { iso: toISO(swapped), corrected: true, invalid: false };
   return { iso: null, corrected: false, invalid: true };
 }
