@@ -241,7 +241,9 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       // New columns mapping
       const idxReferralId = getExactColumnIndex(["REFERRAL ID"]);
-      const idxReferral = idxReferralId !== -1 ? idxReferralId : getColumnIndex(["REFERRAL"]);
+      const idxReferralBase = getExactColumnIndex(["REFERRAL"]);
+      // Fallback: if neither exact match exists, try includes-match
+      const idxReferralFallback = idxReferralBase !== -1 ? idxReferralBase : getColumnIndex(["REFERRAL"]);
       const idxDistribuicao = getColumnIndex(["DISTRIBUIÇÃO"]);
       const idxLinkedin = getColumnIndex(["LINKEDIN"]);
       const idxInicio = getColumnIndex(["INÍCIO"]);
@@ -317,7 +319,10 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       let totalLinhas = 0;
 
       dataRows.forEach((row, rowIndex) => {
-        const valReferral = idxReferral !== -1 ? filterPlaceholder(row[idxReferral]) : null;
+        // Prefer "Referral ID" column if it has a real value; fall back to "Referral" column
+        const rawRefId = idxReferralId !== -1 ? filterPlaceholder(row[idxReferralId]) : null;
+        const rawRefBase = idxReferralFallback !== -1 ? filterPlaceholder(row[idxReferralFallback]) : null;
+        const valReferral = rawRefId || rawRefBase;
         const rawNome = idxNome !== -1 ? String(row[idxNome] || "").trim() : "";
         const valNome = filterPlaceholder(rawNome);
 
