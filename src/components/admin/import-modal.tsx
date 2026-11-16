@@ -600,7 +600,7 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
           if (emailOwner) {
             ignoradosDuplicados++;
             console.warn(
-              `[Importação] Candidato "${c.nome}" ignorado: email ${c.email} já existe no cadastro de "${emailOwner.nome}" (referral ${emailOwner.referral_id})`,
+              `[Importação] Candidato "${c.nome}" ignorado: email ${c.email} já existe no cadastro de "${emailOwner["nome"]}" (referral ${emailOwner["referral_id"]})`,
             );
             return;
           }
