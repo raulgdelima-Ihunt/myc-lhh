@@ -547,8 +547,36 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         c.conector_id = c.talent ? conMap.get(normCon(String(c.talent))) ?? null : null;
       });
 
+      // Normaliza consultor_responsavel para o nome canônico cadastrado em user_roles
+      // (ex.: planilha "Cassia Lourenci" -> user_roles "Cássia Lourenci")
+      const { data: consultoresDb, error: consErr } = await supabase
+        .from("user_roles")
+        .select("nome_consultor")
+        .eq("role", "consultor");
+      if (consErr) throw consErr;
+      const consultorMap = new Map<string, string>();
+      (consultoresDb ?? []).forEach((r: any) => {
+        if (r.nome_consultor) consultorMap.set(normCon(String(r.nome_consultor)), String(r.nome_consultor).trim());
+      });
+      uniqueRows.forEach((c) => {
+        if (!c.consultor_responsavel) return;
+        const canonico = consultorMap.get(normCon(String(c.consultor_responsavel)));
+        if (canonico) c.consultor_responsavel = canonico;
+      });
+
       const toInsert: any[] = [];
       const toUpdate: { id: string; row: any }[] = [];
+      let ignoradosDuplicados = 0;
+
+      // Proteção contra duplicata por email: nunca criar um segundo registro
+      // com um email que já pertence a um candidato ativo (não-duplicado)
+      const byEmail = new Map<string, Record<string, any>>();
+      (existentes ?? []).forEach((r: any) => {
+        const em = String(r.email || "").trim().toLowerCase();
+        if (em && em.includes("@") && em.includes(".") && String(r.status || "").toLowerCase() !== "duplicado") {
+          byEmail.set(em, r);
+        }
+      });
 
       uniqueRows.forEach((c) => {
         // Referral ID is the only matching key.
@@ -567,6 +595,15 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             );
           }
         } else {
+          const em = String(c.email || "").trim().toLowerCase();
+          const emailOwner = em ? byEmail.get(em) : undefined;
+          if (emailOwner) {
+            ignoradosDuplicados++;
+            console.warn(
+              `[Importação] Candidato "${c.nome}" ignorado: email ${c.email} já existe no cadastro de "${emailOwner["nome"]}" (referral ${emailOwner["referral_id"]})`,
+            );
+            return;
+          }
           toInsert.push(c);
         }
 
@@ -599,7 +636,9 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       }
 
       toast.success(
-        `Importação concluída: ${toInsert.length} novos, ${toUpdate.length} atualizados.`,
+        `Importação concluída: ${toInsert.length} novos, ${toUpdate.length} atualizados` +
+          (ignoradosDuplicados > 0 ? `, ${ignoradosDuplicados} ignorados (email duplicado)` : "") +
+          `.`,
       );
       onSuccess();
       onClose();

@@ -55,6 +55,7 @@ export const useCandidateDashboard = (email: string) => {
         .from("candidatos")
         .select("*")
         .ilike("email", normalizedEmail)
+        .neq("status", "duplicado")
         .order("created_at", { ascending: false })
         .limit(1);
       if (candError) throw candError;
