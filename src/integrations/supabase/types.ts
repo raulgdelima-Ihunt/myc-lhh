@@ -412,6 +412,7 @@ export type Database = {
           nome: string
         }[]
       }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
