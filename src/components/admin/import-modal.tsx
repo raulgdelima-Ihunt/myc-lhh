@@ -566,6 +566,17 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
 
       const toInsert: any[] = [];
       const toUpdate: { id: string; row: any }[] = [];
+      let ignoradosDuplicados = 0;
+
+      // Proteção contra duplicata por email: nunca criar um segundo registro
+      // com um email que já pertence a um candidato ativo (não-duplicado)
+      const byEmail = new Map<string, Record<string, any>>();
+      (existentes ?? []).forEach((r: any) => {
+        const em = String(r.email || "").trim().toLowerCase();
+        if (em && em.includes("@") && em.includes(".") && String(r.status || "").toLowerCase() !== "duplicado") {
+          byEmail.set(em, r);
+        }
+      });
 
       uniqueRows.forEach((c) => {
         // Referral ID is the only matching key.
