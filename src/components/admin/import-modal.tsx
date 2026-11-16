@@ -595,6 +595,15 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
             );
           }
         } else {
+          const em = String(c.email || "").trim().toLowerCase();
+          const emailOwner = em ? byEmail.get(em) : undefined;
+          if (emailOwner) {
+            ignoradosDuplicados++;
+            console.warn(
+              `[Importação] Candidato "${c.nome}" ignorado: email ${c.email} já existe no cadastro de "${emailOwner.nome}" (referral ${emailOwner.referral_id})`,
+            );
+            return;
+          }
           toInsert.push(c);
         }
 
@@ -627,7 +636,9 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
       }
 
       toast.success(
-        `Importação concluída: ${toInsert.length} novos, ${toUpdate.length} atualizados.`,
+        `Importação concluída: ${toInsert.length} novos, ${toUpdate.length} atualizados` +
+          (ignoradosDuplicados > 0 ? `, ${ignoradosDuplicados} ignorados (email duplicado)` : "") +
+          `.`,
       );
       onSuccess();
       onClose();
