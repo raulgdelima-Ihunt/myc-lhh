@@ -547,6 +547,23 @@ export function ImportCandidatosModal({ isOpen, onClose, onSuccess }: ImportModa
         c.conector_id = c.talent ? conMap.get(normCon(String(c.talent))) ?? null : null;
       });
 
+      // Normaliza consultor_responsavel para o nome canônico cadastrado em user_roles
+      // (ex.: planilha "Cassia Lourenci" -> user_roles "Cássia Lourenci")
+      const { data: consultoresDb, error: consErr } = await supabase
+        .from("user_roles")
+        .select("nome_consultor")
+        .eq("role", "consultor");
+      if (consErr) throw consErr;
+      const consultorMap = new Map<string, string>();
+      (consultoresDb ?? []).forEach((r: any) => {
+        if (r.nome_consultor) consultorMap.set(normCon(String(r.nome_consultor)), String(r.nome_consultor).trim());
+      });
+      uniqueRows.forEach((c) => {
+        if (!c.consultor_responsavel) return;
+        const canonico = consultorMap.get(normCon(String(c.consultor_responsavel)));
+        if (canonico) c.consultor_responsavel = canonico;
+      });
+
       const toInsert: any[] = [];
       const toUpdate: { id: string; row: any }[] = [];
 
