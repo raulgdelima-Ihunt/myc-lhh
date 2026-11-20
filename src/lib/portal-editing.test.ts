@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { candidateEditFields, candidateEditPayload, indicationEditFields, indicationEditPayload, canAccessStaffRoute, staffHome } from './portal-editing';
+import { candidateEditFields, candidateEditPayload, conectorCandidateProfileFields, indicationEditFields, indicationEditPayload, canAccessStaffRoute, staffHome } from './portal-editing';
 
 describe('portal editing permissions', () => {
   it('allows connectors only their staff area and sends them there', () => {
@@ -26,5 +26,11 @@ describe('portal editing permissions', () => {
   it('preserves unchanged and undated fields on save', () => {
     expect(indicationEditPayload({ data_acao: '1900-01-01', resultado: 'Entrevista gerada' }, { data_acao: '1900-01-01', resultado: 'Entrevista gerada' })).toEqual({});
     expect(candidateEditPayload({ telefone: '123' }, { telefone: '123' })).toEqual({});
+  });
+  it('gives connectors a read-only candidate profile limited to the agreed registration fields', () => {
+    expect(conectorCandidateProfileFields.map(([k]) => k)).toEqual(['nome','email','telefone','linkedin','consultor_responsavel','ultima_posicao','ultima_empresa','area','nivel_cargo','posicoes_alvo','segmento_alvo','empresas_alvo','mobilidade','local_residencia','programa','status_programa','observacao']);
+    for (const hidden of ['id','nome_normalizado','referral_id','conector_id','status','created_at']) {
+      expect(conectorCandidateProfileFields.some(([k]) => k === hidden)).toBe(false);
+    }
   });
 });

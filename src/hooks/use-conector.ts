@@ -30,3 +30,17 @@ export function useConectorIndicacoes(userId?: string) {
     },
   });
 }
+
+/** Read-only registration data of one candidate linked to the connector (RLS limits the row). */
+export function useConectorCandidato(candidatoId?: string) {
+  return useQuery({
+    queryKey: ['conector-candidato', candidatoId],
+    enabled: Boolean(candidatoId),
+    queryFn: async () => {
+      if (!candidatoId) return null;
+      const { data, error } = await supabase.from('candidatos').select('*').eq('id', candidatoId).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}

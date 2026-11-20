@@ -10,6 +10,17 @@ export const candidateEditFields = [
   ['local_residencia', 'Local'], ['observacao', 'Observações'],
   ['faixa_salarial', 'Faixa Salarial'], ['idioma', 'Idioma'],
 ] as const;
+
+/** Read-only registration fields a connector may see for a linked candidate. Never used for writes. */
+export const conectorCandidateProfileFields = [
+  ['nome', 'Nome'], ['email', 'E-mail'], ['telefone', 'Telefone'], ['linkedin', 'LinkedIn'],
+  ['consultor_responsavel', 'Consultor Responsável'], ['ultima_posicao', 'Última Posição'],
+  ['ultima_empresa', 'Última Empresa'], ['area', 'Área'], ['nivel_cargo', 'Nível de Cargo'],
+  ['posicoes_alvo', 'Posições Alvo'], ['segmento_alvo', 'Segmento Alvo'],
+  ['empresas_alvo', 'Empresas Alvo'], ['mobilidade', 'Mobilidade'],
+  ['local_residencia', 'Local de Residência'], ['programa', 'Programa'],
+  ['status_programa', 'Status Programa'], ['observacao', 'Observação'],
+] as const;
 export const indicationEditFields = [
   ['vaga', 'Vaga'], ['empresa', 'Empresa'], ['acao_tipo', 'Ação Tipo'],
   ['resultado', 'Resultado'], ['data_acao', 'Data Ação'], ['vaga_link', 'Link da Vaga'],

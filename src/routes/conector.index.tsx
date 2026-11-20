@@ -5,9 +5,9 @@ import { toast } from 'sonner';
 import { Briefcase, Users, LogOut, Search, Pencil, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useMyRole } from '@/hooks/use-consultor';
-import { useConectorIndicacoes, type ConectorIndicacao } from '@/hooks/use-conector';
+import { useConectorCandidato, useConectorIndicacoes, type ConectorIndicacao } from '@/hooks/use-conector';
 import { supabase } from '@/integrations/supabase/client';
-import { indicationEditFields, indicationEditPayload } from '@/lib/portal-editing';
+import { conectorCandidateProfileFields, indicationEditFields, indicationEditPayload } from '@/lib/portal-editing';
 import { formatDateBR, normalizeText, DEFAULT_ACTION_DATE } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,8 @@ function ConectorDashboard() {
   const [selected, setSelected] = useState<ConectorIndicacao | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const { data: profile, isLoading: profileLoading } = useConectorCandidato(profileId ?? undefined);
   const filtered = useMemo(() => {
     const term = normalizeText(search);
     return rows.filter(row => normalizeText(`${row.candidato_nome} ${row.vaga} ${row.empresa}`).includes(term));
@@ -87,12 +89,12 @@ function ConectorDashboard() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border p-6"><h2 className="text-lg font-semibold">Indicações</h2><div className="relative w-full sm:max-w-sm"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input aria-label="Buscar indicações" placeholder="Buscar candidato, vaga ou empresa..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} /></div></div>
         {isLoading ? <div className="p-12 text-center"><Loader2 className="mx-auto animate-spin text-primary" /></div> : error ? <div className="p-12 text-center text-destructive"><p>Não foi possível carregar suas indicações.</p><Button variant="outline" onClick={() => refetch()}>Tentar novamente</Button></div> : filtered.length ? <Table>
           <TableHeader className="bg-muted"><TableRow>{['Candidato', 'Vaga', 'Empresa', 'Data Ação', 'Resultado', 'Ação Tipo', ''].map((label, index) => <TableHead key={index}>{label}</TableHead>)}</TableRow></TableHeader>
-          <TableBody>{filtered.map(row => <TableRow key={row.id} className="cursor-pointer hover:bg-accent" onClick={() => edit(row)}>
-            <TableCell className="font-medium">{row.candidato_nome}</TableCell>
+          <TableBody>{filtered.map(row => { const candidatoId = row.candidato_id; return <TableRow key={row.id} className="cursor-pointer hover:bg-accent" onClick={() => edit(row)}>
+            <TableCell className="font-medium">{candidatoId ? <button type="button" className="cursor-pointer text-left text-primary hover:underline" title="Ver dados do candidato" onClick={e => { e.stopPropagation(); setProfileId(candidatoId); }}>{row.candidato_nome}</button> : row.candidato_nome}</TableCell>
             <TableCell>{row.vaga_link ? <a href={row.vaga_link} target="_blank" rel="noreferrer" className="text-primary hover:underline" onClick={e => e.stopPropagation()}>{row.vaga}</a> : row.vaga}</TableCell>
             <TableCell>{row.empresa}</TableCell><TableCell className="whitespace-nowrap">{formatDateBR(row.data_acao)}</TableCell><TableCell>{row.resultado || '—'}</TableCell><TableCell>{row.acao_tipo || '—'}</TableCell>
             <TableCell><Button variant="ghost" size="icon" aria-label={`Editar indicação ${row.vaga}`} title="Editar indicação" onClick={e => { e.stopPropagation(); edit(row); }}><Pencil /></Button></TableCell>
-          </TableRow>)}</TableBody>
+          </TableRow>; })}</TableBody>
         </Table> : <p className="p-12 text-center text-muted-foreground">Nenhuma indicação encontrada.</p>}
       </section>
       <footer className="py-8 text-center text-xs text-muted-foreground">@2026 LHH MyCareer Portal</footer>
@@ -105,6 +107,18 @@ function ConectorDashboard() {
             <span>{label}</span>{key === 'observacoes' || key === 'follow_up' ? <Textarea aria-label={label} value={draft[key] ?? ''} disabled={saving} onChange={e => setDraft(prev => ({ ...prev, [key]: e.target.value }))} /> : <Input aria-label={label} type={key === 'data_acao' || key === 'data_retorno' ? 'date' : 'text'} required={key === 'vaga' || key === 'empresa'} value={draft[key] === DEFAULT_ACTION_DATE ? '' : draft[key] ?? ''} disabled={saving} onChange={e => setDraft(prev => ({ ...prev, [key]: e.target.value }))} />}
           </label>)}
         </div><DialogFooter><Button type="button" variant="outline" disabled={saving} onClick={() => setSelected(null)}>Cancelar</Button><Button type="submit" disabled={saving}>{saving && <Loader2 className="animate-spin" />}{saving ? 'Salvando...' : 'Salvar'}</Button></DialogFooter></form>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={Boolean(profileId)} onOpenChange={open => { if (!open) setProfileId(null); }}>
+      <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto">
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><Users size={18} />Cadastro do Candidato</DialogTitle><DialogDescription>Somente leitura</DialogDescription></DialogHeader>
+        {profileLoading ? <div className="p-12 text-center"><Loader2 className="mx-auto animate-spin text-primary" /></div> : profile ? <div className="grid gap-4 sm:grid-cols-2">
+          {conectorCandidateProfileFields.map(([key, label]) => <div key={key} className={key === 'observacao' ? 'sm:col-span-2' : ''}>
+            <p className="text-[10px] font-bold uppercase tracking-tighter text-muted-foreground">{label}</p>
+            <p className="text-sm font-medium text-foreground">{profile[key] || '—'}</p>
+          </div>)}
+        </div> : <p className="p-8 text-center text-muted-foreground">Não foi possível carregar os dados deste candidato.</p>}
+        <DialogFooter><Button onClick={() => setProfileId(null)}>Fechar</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   </div>;
