@@ -403,6 +403,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      conector_candidato_ids: { Args: never; Returns: string[] }
       current_conector_nome: { Args: never; Returns: string }
       current_consultor_nome: { Args: never; Returns: string }
       current_user_role: { Args: never; Returns: string }
