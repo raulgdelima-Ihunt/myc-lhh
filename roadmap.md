@@ -4,3 +4,7 @@
 - [x] Trocar o rodapé e adicionar botão de WhatsApp em todas as telas.
 - [x] Bloquear a importação de sobrescrever dados reais com valores de lixo (e-mail e área).
 
+- [x] Criar painel do conector com edição de indicações existentes e entrada por perfil.
+- [x] Permitir consultor editar apenas os campos autorizados do cadastro.
+- [x] Verificar testes, redirecionamentos reais e formulários com respostas controladas sem gravar no banco.
+- [ ] Validar salvamento real como conector e consultor: depende de sessão autorizada desses perfis; sessão disponível não possui esses acessos.

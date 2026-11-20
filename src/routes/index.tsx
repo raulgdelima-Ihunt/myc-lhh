@@ -96,6 +96,9 @@ function Index() {
       } else if (roleData?.role === "consultor") {
         setDebugInfo("Auth: sucesso | Perfil: consultor | Redirecionando para: /consultor");
         navigate({ to: "/consultor" });
+      } else if (roleData?.role === "conector") {
+        setDebugInfo("Auth: sucesso | Perfil: conector | Redirecionando para: /conector");
+        navigate({ to: "/conector" });
       } else {
         // Case-insensitive candidate lookup (spreadsheet e-mails vary in casing/spacing)
         const { data: candidateData } = await supabase

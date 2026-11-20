@@ -2,6 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { canAccessStaffRoute, staffHome } from "@/lib/portal-editing";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -18,6 +19,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
 
       try {
+        setCheckingRole(true);
+        setRole(null);
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")
@@ -43,18 +46,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, navigate]);
 
-  const isAdminRoute = location.pathname.startsWith("/admin");
-  const isConsultorRoute = location.pathname.startsWith("/consultor");
+  const allowed = canAccessStaffRoute(role, location.pathname);
 
   useEffect(() => {
     if (checkingRole || !user) return;
 
-    if (isAdminRoute && role !== "admin") {
-      navigate({ to: role === "consultor" ? "/consultor" : "/dashboard" });
-    } else if (isConsultorRoute && role !== "consultor" && role !== "admin") {
-      navigate({ to: "/dashboard" });
-    }
-  }, [role, checkingRole, user, isAdminRoute, isConsultorRoute, navigate]);
+    if (!allowed) navigate({ to: staffHome(role), replace: true });
+  }, [role, checkingRole, user, allowed, navigate]);
 
   if (loading || checkingRole) {
     return (
@@ -68,8 +66,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  if (isAdminRoute && role !== "admin") return null;
-  if (isConsultorRoute && role !== "consultor" && role !== "admin") return null;
+  if (!allowed) return null;
 
   return <>{children}</>;
 }

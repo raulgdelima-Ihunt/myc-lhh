@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Briefcase, Loader2 } from "lucide-react";
 import { formatDateBR, isEntrevistaGerada } from "@/lib/date-utils";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { candidateEditFields, candidateEditPayload } from "@/lib/portal-editing";
 
 const formatActionDate = formatDateBR;
 
@@ -47,6 +54,38 @@ function ConsultorCandidatoDetail() {
   const { data: candidato, isLoading } = useCandidato(id);
   const { data: indicacoes, isLoading: isLoadingIndicacoes } = useCandidatoIndicacoes(id);
   const { data: distribuidoEm } = useCandidatoDistribuicao(id);
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+
+  function startEditing() {
+    if (!candidato) return;
+    setDraft(Object.fromEntries(candidateEditFields.map(([key]) => [key, candidato[key] ?? ""])));
+    setEditing(true);
+  }
+
+  async function saveCandidate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!candidato || saving) return;
+    const payload = candidateEditPayload(draft, candidato);
+    if (!Object.keys(payload).length) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.from("candidatos").update(payload).eq("id", id).select("id").single();
+      if (error) throw error;
+      if (!data) throw new Error("Cadastro não atualizado");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["candidato", id] }),
+        queryClient.invalidateQueries({ queryKey: ["consultor-carteira"] }),
+        queryClient.invalidateQueries({ queryKey: ["candidate-dashboard"] }),
+      ]);
+      setEditing(false);
+      toast.success("Cadastro atualizado com sucesso");
+    } catch {
+      toast.error("Não foi possível salvar o cadastro. Tente novamente.");
+    } finally { setSaving(false); }
+  }
 
   if (isLoading) {
     return (
@@ -88,17 +127,28 @@ function ConsultorCandidatoDetail() {
               </span>
             </div>
 
-            <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-4 border-t border-gray-100 pt-6 sm:grid-cols-3">
-              <Field label="Área" value={candidato?.area} />
-              <Field label="Nível de Cargo" value={candidato?.nivel_cargo} />
-              <Field label="Telefone" value={candidato?.telefone} />
-              <Field label="Última Posição" value={candidato?.ultima_posicao} />
-              <Field label="Última Empresa" value={candidato?.ultima_empresa} />
-              <Field label="Posições Alvo" value={candidato?.posicoes_alvo} />
-              <Field label="Empresas Alvo" value={candidato?.empresas_alvo} />
-              <Field label="Local" value={candidato?.local_residencia} />
-              <Field label="Mobilidade" value={candidato?.mobilidade} />
-            </div>
+            <form onSubmit={saveCandidate} className="mt-6 border-t border-border pt-6">
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-lg font-semibold text-foreground">Cadastro do Candidato</h2>
+                {editing ? <div className="flex gap-2">
+                  <Button type="button" variant="outline" disabled={saving} onClick={() => setEditing(false)}>Cancelar</Button>
+                  <Button type="submit" disabled={saving}>{saving && <Loader2 className="animate-spin" />}{saving ? "Salvando..." : "Salvar"}</Button>
+                </div> : <Button type="button" onClick={startEditing} disabled={!candidato}>Editar Cadastro</Button>}
+              </div>
+              <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-3">
+                <Field label="Referral" value={candidato?.referral_id || "—"} />
+                <Field label="Nome" value={candidato?.nome || "—"} />
+                <Field label="Nome Completo" value={candidato?.nome_completo || "—"} />
+                {candidateEditFields.map(([key, label]) => editing ? (
+                  <label key={key} className={`space-y-1 text-sm font-medium text-foreground ${key === "observacao" ? "sm:col-span-3" : ""}`}>
+                    <span>{label}</span>
+                    {["posicoes_alvo", "empresas_alvo", "empresas_restritas", "observacao"].includes(key) ? (
+                      <Textarea aria-label={label} value={draft[key] ?? ""} disabled={saving} onChange={e => setDraft(prev => ({ ...prev, [key]: e.target.value }))} />
+                    ) : <Input aria-label={label} type={key === "email" ? "email" : "text"} value={draft[key] ?? ""} disabled={saving} onChange={e => setDraft(prev => ({ ...prev, [key]: e.target.value }))} />}
+                  </label>
+                ) : <Field key={key} label={label} value={candidato?.[key]} />)}
+              </div>
+            </form>
           </div>
 
           <Card className="border-border shadow-[0_2px_8px_rgba(0,0,0,0.08)]">

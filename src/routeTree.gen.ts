@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ConectorRouteImport } from './routes/conector'
 import { Route as ConsultorRouteImport } from './routes/consultor'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as ConectorIndexRouteImport } from './routes/conector.index'
 import { Route as ConsultorIndexRouteImport } from './routes/consultor.index'
 import { Route as AdminCandidatoIdRouteImport } from './routes/admin.candidato.$id'
 import { Route as ConsultorCandidatoIdRouteImport } from './routes/consultor.candidato.$id'
@@ -26,6 +28,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConectorRoute = ConectorRouteImport.update({
+  id: '/conector',
+  path: '/conector',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsultorRoute = ConsultorRouteImport.update({
@@ -42,6 +49,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
+} as any)
+const ConectorIndexRoute = ConectorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ConectorRoute,
 } as any)
 const ConsultorIndexRoute = ConsultorIndexRouteImport.update({
   id: '/',
@@ -62,9 +74,11 @@ const ConsultorCandidatoIdRoute = ConsultorCandidatoIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/conector': typeof ConectorRouteWithChildren
   '/consultor': typeof ConsultorRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/admin/': typeof AdminIndexRoute
+  '/conector/': typeof ConectorIndexRoute
   '/consultor/': typeof ConsultorIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
   '/consultor/candidato/$id': typeof ConsultorCandidatoIdRoute
@@ -73,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/admin': typeof AdminIndexRoute
+  '/conector': typeof ConectorIndexRoute
   '/consultor': typeof ConsultorIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
   '/consultor/candidato/$id': typeof ConsultorCandidatoIdRoute
@@ -81,9 +96,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/conector': typeof ConectorRouteWithChildren
   '/consultor': typeof ConsultorRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/admin/': typeof AdminIndexRoute
+  '/conector/': typeof ConectorIndexRoute
   '/consultor/': typeof ConsultorIndexRoute
   '/admin/candidato/$id': typeof AdminCandidatoIdRoute
   '/consultor/candidato/$id': typeof ConsultorCandidatoIdRoute
@@ -93,9 +110,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/conector'
     | '/consultor'
     | '/dashboard'
     | '/admin/'
+    | '/conector/'
     | '/consultor/'
     | '/admin/candidato/$id'
     | '/consultor/candidato/$id'
@@ -104,6 +123,7 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/admin'
+    | '/conector'
     | '/consultor'
     | '/admin/candidato/$id'
     | '/consultor/candidato/$id'
@@ -111,9 +131,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/conector'
     | '/consultor'
     | '/dashboard'
     | '/admin/'
+    | '/conector/'
     | '/consultor/'
     | '/admin/candidato/$id'
     | '/consultor/candidato/$id'
@@ -122,6 +144,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  ConectorRoute: typeof ConectorRouteWithChildren
   ConsultorRoute: typeof ConsultorRouteWithChildren
   DashboardRoute: typeof DashboardRoute
 }
@@ -140,6 +163,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conector': {
+      id: '/conector'
+      path: '/conector'
+      fullPath: '/conector'
+      preLoaderRoute: typeof ConectorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/consultor': {
@@ -162,6 +192,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/conector/': {
+      id: '/conector/'
+      path: '/'
+      fullPath: '/conector/'
+      preLoaderRoute: typeof ConectorIndexRouteImport
+      parentRoute: typeof ConectorRoute
     }
     '/consultor/': {
       id: '/consultor/'
@@ -199,6 +236,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ConectorRouteChildren {
+  ConectorIndexRoute: typeof ConectorIndexRoute
+}
+
+const ConectorRouteChildren: ConectorRouteChildren = {
+  ConectorIndexRoute: ConectorIndexRoute,
+}
+
+const ConectorRouteWithChildren = ConectorRoute._addFileChildren(
+  ConectorRouteChildren,
+)
+
 interface ConsultorRouteChildren {
   ConsultorIndexRoute: typeof ConsultorIndexRoute
   ConsultorCandidatoIdRoute: typeof ConsultorCandidatoIdRoute
@@ -216,6 +265,7 @@ const ConsultorRouteWithChildren = ConsultorRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  ConectorRoute: ConectorRouteWithChildren,
   ConsultorRoute: ConsultorRouteWithChildren,
   DashboardRoute: DashboardRoute,
 }
