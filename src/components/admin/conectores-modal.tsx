@@ -21,6 +21,8 @@ import {
 import { toast } from "sonner";
 import { Loader2, Pencil, Plus, Power, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { createConectorAccess } from "@/lib/conector-access.functions";
 
 interface Conector {
   id: string;
@@ -47,6 +49,8 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
   const [editing, setEditing] = useState<Conector | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("Lhh@2026");
+  const createLogin = useServerFn(createConectorAccess);
 
   const loadConectores = async () => {
     setIsLoading(true);
@@ -69,6 +73,7 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
       setEditing(null);
       setNome("");
       setEmail("");
+      setPassword("Lhh@2026");
     }
   }, [isOpen]);
 
@@ -77,11 +82,16 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
     setEditing(null);
     setNome("");
     setEmail("");
+    setPassword("Lhh@2026");
   };
 
   const handleSubmit = async () => {
     if (!nome.trim() || !email.trim()) {
       toast.error("Informe o nome e o e-mail do conector.");
+      return;
+    }
+    if (!editing && password.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
     setIsSaving(true);
@@ -98,16 +108,13 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
         if (error) throw error;
         toast.success("Conector atualizado!");
       } else {
-        const { error } = await supabase
-          .from("conectores")
-          .insert({ nome: nome.trim(), email: email.trim().toLowerCase() });
-        if (error) throw error;
-        toast.success("Conector adicionado!");
+        await createLogin({ data: { nome: nome.trim(), email: email.trim().toLowerCase(), password } });
+        toast.success("Login criado com sucesso");
       }
       resetForm();
       await loadConectores();
-    } catch (error: any) {
-      toast.error("Erro ao salvar: " + (error.message || "Erro desconhecido"));
+    } catch (error: unknown) {
+      toast.error("Erro ao salvar: " + (error instanceof Error ? error.message : "Erro desconhecido"));
     } finally {
       setIsSaving(false);
     }
@@ -175,6 +182,18 @@ export function ConectoresModal({ isOpen, onClose }: Props) {
                 placeholder="conector@email.com"
               />
             </div>
+            {!editing && (
+              <div className="space-y-1.5">
+                <Label htmlFor="conector-password">Senha</Label>
+                <Input
+                  id="conector-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-2">

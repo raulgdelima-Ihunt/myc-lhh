@@ -12,3 +12,4 @@
 - Connector indication reads use a paginated browser hook and client-side candidate-name join under existing RLS; never use privileged clients for this dashboard.
 - Staff editors construct changed-field updates from explicit allowlists in portal-editing; identity, ownership and unrelated candidate fields must not enter save payloads.
 - Staff route permissions and role home destinations share portal-editing helpers to keep connector/admin/consultant routing consistent.
+- Connector account creation uses an admin-authorized server function and the Auth Admin API, never a browser shared secret or raw auth-table writes; existing accounts are never reassigned or deleted on errors.

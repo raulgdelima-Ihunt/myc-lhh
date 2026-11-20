@@ -8,3 +8,6 @@
 - [x] Permitir consultor editar apenas os campos autorizados do cadastro.
 - [x] Verificar testes, redirecionamentos reais e formulários com respostas controladas sem gravar no banco.
 - [ ] Validar salvamento real como conector e consultor: depende de sessão autorizada desses perfis; sessão disponível não possui esses acessos.
+- [x] Add administrator-only connector login provisioning and a new-connector password field without changing existing-account edits.
+- [x] Verify connector login creation checks and the new/edit dialog states without modifying existing records.
+- [ ] Verify live connector account creation: available session is not an administrator; security tests and controlled dialog checks passed.
